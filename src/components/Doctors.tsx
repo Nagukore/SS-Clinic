@@ -57,7 +57,7 @@ export default function Doctors() {
         "Allergies",
         "Asthma",
       ],
-      gradient: "from-teal-500 to-teal-700",
+      gradient: "from-blue-500 to-blue-700",
       photo: "/images/ashwini.jpg", // Replace with actual path
     },
   ];
