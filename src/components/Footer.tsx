@@ -57,10 +57,10 @@ export default function Footer() {
     <li className="flex items-center gap-2">
       <Mail size={18} className="text-blue-400 flex-shrink-0" />
       <a
-        href="mailto:info@shakthiclinic.com"
+        href="mailto:ssclinicbangalore@gmail.com"
         className="text-gray-400 text-sm hover:text-blue-500 transition-colors duration-300"
       >
-        info@shakthiclinic.com
+        ssclinicbangalore@gmail.com
       </a>
     </li>
   </ul>

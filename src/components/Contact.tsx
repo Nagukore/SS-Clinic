@@ -108,7 +108,7 @@ export default function Contact() {
 
            {/* Email Us */}
            <a
-             href="mailto:info@ssclinic.com"
+             href="mailto:ssclinicbangalore@gmail.com"
              className="flex gap-6 items-center group hover:bg-gray-50 p-4 rounded-xl transition-all duration-300"
            >
              <div className="w-14 h-14 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
@@ -119,7 +119,7 @@ export default function Contact() {
                  Email Us
                </h3>
                <p className="text-gray-600 leading-relaxed">
-                 info@ssclinic.com
+                 ssclinicbangalore@gmail.com
                </p>
              </div>
            </a>
