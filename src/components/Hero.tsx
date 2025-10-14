@@ -1,10 +1,36 @@
 import { useState, useEffect } from 'react';
 import { ArrowRight, Heart } from 'lucide-react';
 
-// Defines the content for each slide
+// --- Welcome Loader Component ---
+function WelcomeLoader({ isFading }: { isFading: boolean }) {
+  return (
+    <div
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-white transition-opacity duration-500 ease-out ${
+        isFading ? 'opacity-0' : 'opacity-100'
+      }`}
+    >
+      <div className="text-center animate-fade-in-pulse">
+        <img
+          src="/images/logo.jpg"
+          alt="Shrishakthi Clinic Logo"
+          className="w-32 h-32 mx-auto"
+        />
+        <h1 className="mt-4 text-3xl font-bold text-gray-800 tracking-wider">
+          Shrishakthi Clinic
+        </h1>
+        <p className="mt-2 text-lg text-blue-600">
+          Holistic Healing & Wellness
+        </p>
+      </div>
+    </div>
+  );
+}
+
+
+// --- Main Hero Component ---
 const sliderContent = [
   {
-    src: '/images/clinic.jpg', // Ensure your images are in public/images/slider/
+    src: '/images/clinic.jpg',
     alt: 'Modern and welcoming clinic reception',
     title: 'Shrishakthi Clinic',
     subtitle: 'Modern & Welcoming Care',
@@ -35,19 +61,36 @@ const sliderContent = [
 
 export default function Hero() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFading, setIsFading] = useState(false);
 
-  // Auto-advance the slider
+  // Effect to manage the welcome loader visibility (Updated to 1 second)
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % sliderContent.length);
-    }, 4000); // Changes image every 4 seconds
-
-    return () => clearInterval(intervalId);
+    const fadeTimer = setTimeout(() => setIsFading(true), 500); // Start fading after 0.5s
+    const loadTimer = setTimeout(() => setIsLoading(false), 1000); // Remove after 1s total
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(loadTimer);
+    };
   }, []);
+  
+  // Effect to manage the image slider's automatic progression
+  useEffect(() => {
+    if (!isLoading) {
+      const intervalId = setInterval(() => {
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % sliderContent.length);
+      }, 4000);
+      return () => clearInterval(intervalId);
+    }
+  }, [isLoading]);
 
-  const goToSlide = (index) => {
+  const goToSlide = (index: number) => {
     setCurrentIndex(index);
   };
+
+  if (isLoading) {
+    return <WelcomeLoader isFading={isFading} />;
+  }
 
   return (
     <section id="home" className="pt-20 bg-gradient-to-br from-blue-50 via-white to-blue-50">
@@ -56,7 +99,6 @@ export default function Hero() {
 
           {/* Left Side - Image Slider & Text */}
           <div className="relative">
-            {/* Image Container */}
             <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[4/3]">
               {sliderContent.map((content, index) => (
                 <img
@@ -69,8 +111,6 @@ export default function Hero() {
                 />
               ))}
             </div>
-
-            {/* Navigation Dots */}
             <div className="flex justify-center pt-4 space-x-2">
               {sliderContent.map((_, index) => (
                 <button
@@ -83,8 +123,6 @@ export default function Hero() {
                 ></button>
               ))}
             </div>
-
-            {/* Dynamic Text Section Below Slider */}
             <div className="pt-6 text-center">
               <h3 className="text-2xl font-bold text-gray-900">
                 {sliderContent[currentIndex].title}
@@ -92,7 +130,7 @@ export default function Hero() {
               <p className="text-lg font-semibold text-blue-600">
                 {sliderContent[currentIndex].subtitle}
               </p>
-              <p className="mt-2 text-gray-600 h-12"> {/* Fixed height to prevent layout shift */}
+              <p className="mt-2 text-gray-600 h-12">
                 {sliderContent[currentIndex].description}
               </p>
             </div>
@@ -133,7 +171,6 @@ export default function Hero() {
                 <p className="text-sm text-gray-600">Emergency Care</p>
               </div>
             </div>
-            
             <div className="absolute -bottom-6 -right-6 bg-white p-6 rounded-xl shadow-xl border-2 border-blue-100 hidden lg:block">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
@@ -146,7 +183,6 @@ export default function Hero() {
               </div>
             </div>
           </div>
-          
         </div>
       </div>
     </section>
