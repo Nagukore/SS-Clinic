@@ -45,9 +45,9 @@ export default function Chatbot() {
       return "For diabetes management, Dr. Sujith M S is our specialist Diabetologist. He provides:\n- Comprehensive diabetes care\n- Blood sugar monitoring\n- Personalized treatment plans\n- Lifestyle and dietary guidance\n- Management of diabetes complications\n\nPlease book an appointment to discuss your specific needs.";
     }
 
+    // --- MODIFIED: Response now includes a clickable HTML link ---
     if (lowerMessage.includes('appointment') || lowerMessage.includes('book') || lowerMessage.includes('schedule')) {
-      return "To book an appointment:\n1. Click the 'Book Appointment' button in the navigation menu\n2. Or scroll down to the Contact section\n3. Fill in your details (name, phone, email)\n4. Select your preferred doctor\n5. Choose your preferred date\n6. Submit the form\n\nYou can also call us directly for immediate appointments. Our contact details are in the footer section.";
-    }
+return `To book an appointment, you can click this link: <a href="#appointment" class="text-blue-600 font-bold underline hover:text-blue-800 transition-colors">Book Appointment Now</a>.\n\nAlternatively, you can:\n1. Scroll down to the Contact section\n2. Fill in your details\n3. Select your preferred doctor and date\n4. Submit the form\n\nYou can also call us directly for immediate appointments.`;    }
 
     if (lowerMessage.includes('service') || lowerMessage.includes('treatment') || lowerMessage.includes('what do you')) {
       return "Srishakthi Clinic offers:\n\n🩸 Diabetes Management\n❤️ Hypertension Care\n👶 Pediatric Care\n💉 Immunization\n🦠 Infectious Disease Treatment\n🩺 General Medicine\n\nScroll to the 'Services' section to learn more.";
@@ -152,7 +152,7 @@ export default function Chatbot() {
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex gap-2 ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex gap-2 items-start ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {message.sender === 'bot' && (
                   <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -166,7 +166,11 @@ export default function Chatbot() {
                       : 'bg-white text-gray-800 rounded-bl-none shadow-md border border-gray-200'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-line leading-relaxed">{message.text}</p>
+                  {/* --- This part renders the message as HTML to make links clickable --- */}
+                  <div 
+                    className="text-sm whitespace-pre-line leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: message.text }} 
+                  />
                 </div>
                 {message.sender === 'user' && (
                   <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
@@ -200,12 +204,12 @@ export default function Chatbot() {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Type your message..."
+                placeholder="Ask about doctors, services..."
                 className="flex-1 px-4 py-2 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
               />
               <button
                 onClick={handleSendMessage}
-                disabled={!inputMessage.trim()}
+                disabled={!inputMessage.trim() || isTyping}
                 className="bg-blue-600 text-white p-2 sm:p-3 rounded-xl hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                 aria-label="Send message"
               >
