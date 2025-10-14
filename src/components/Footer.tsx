@@ -1,4 +1,4 @@
-import { Heart, Phone, Mail, MapPin } from 'lucide-react';
+import { Phone, Mail, MapPin } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -6,8 +6,12 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Heart className="text-blue-400 fill-current" size={28} />
+            <div className="flex items-center gap-3 mb-4">
+              <img
+                src="/images/logo.jpg"
+                alt="Srishakthi Clinic Logo"
+                className="h-12 w-12 object-contain"
+              />
               <h3 className="text-2xl font-bold">SS Clinic</h3>
             </div>
             <p className="text-gray-400 leading-relaxed mb-4">
