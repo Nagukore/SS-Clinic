@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { ArrowRight, Heart } from 'lucide-react';
 
-// Defines the images and their associated overlay text for the slider
+// Defines the content for each slide
 const sliderContent = [
   {
-    src: '/images/clinic.jpg',
+    src: '/images/clinic.jpg', // Ensure your images are in public/images/slider/
     alt: 'Modern and welcoming clinic reception',
     title: 'Shrishakthi Clinic',
     subtitle: 'Modern & Welcoming Care',
@@ -13,23 +13,23 @@ const sliderContent = [
   {
     src: '/images/laboratory.jpg',
     alt: 'Advanced medical laboratory for testing',
-    title: 'Shrishakthi Clinic',
-    subtitle: 'Advanced Lab & Research',
-    description: 'Accurate and timely diagnostic testing for precise health insights.'
+    title: 'Advanced Lab & Research',
+    subtitle: 'Accurate and Timely Diagnostics',
+    description: 'Utilizing state-of-the-art technology for precise health insights.'
   },
   {
     src: '/images/diagnosis.jpg',
     alt: 'Doctor and patient discussing diagnosis',
-    title: 'Shrishakthi Clinic',
-    subtitle: 'Precise Diagnosis & Consultation',
-    description: 'Expert medical consultations for clear understanding of your health.'
+    title: 'Precise Diagnosis & Consultation',
+    subtitle: 'Expert Medical Guidance',
+    description: 'Partner with our specialists for a clear understanding of your health.'
   },
   {
     src: '/images/hospital.jpg',
     alt: 'Comfortable and clean hospital room for inpatient care',
-    title: 'Shrishakthi Clinic',
-    subtitle: 'Comprehensive Inpatient Care',
-    description: 'Dedicated care and comfort for your recovery and well-being.'
+    title: 'Comprehensive Inpatient Care',
+    subtitle: 'Dedicated to Your Recovery',
+    description: 'Comfort and dedicated medical attention for your well-being.'
   },
 ];
 
@@ -42,10 +42,9 @@ export default function Hero() {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % sliderContent.length);
     }, 4000); // Changes image every 4 seconds
 
-    return () => clearInterval(intervalId); // Cleans up the interval on component unmount
+    return () => clearInterval(intervalId);
   }, []);
 
-  // Function to handle dot clicks
   const goToSlide = (index) => {
     setCurrentIndex(index);
   };
@@ -55,32 +54,24 @@ export default function Hero() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
 
-          {/* Left Side - Image Slider (Previously on the Right) */}
+          {/* Left Side - Image Slider & Text */}
           <div className="relative">
+            {/* Image Container */}
             <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[4/3]">
               {sliderContent.map((content, index) => (
-                <div
+                <img
                   key={index}
-                  className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${
+                  src={content.src}
+                  alt={content.alt}
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
                     currentIndex === index ? 'opacity-100' : 'opacity-0'
                   }`}
-                >
-                  <img
-                    src={content.src}
-                    alt={content.alt}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 flex flex-col justify-end p-8 bg-gradient-to-t from-black/60 via-transparent to-transparent text-white">
-                    <h3 className="text-3xl font-bold mb-1">{content.title}</h3>
-                    <p className="text-xl font-semibold mb-2 text-blue-200">{content.subtitle}</p>
-                    <p className="text-sm text-blue-100">{content.description}</p>
-                  </div>
-                </div>
+                />
               ))}
             </div>
 
             {/* Navigation Dots */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2 z-10">
+            <div className="flex justify-center pt-4 space-x-2">
               {sliderContent.map((_, index) => (
                 <button
                   key={index}
@@ -92,9 +83,22 @@ export default function Hero() {
                 ></button>
               ))}
             </div>
+
+            {/* Dynamic Text Section Below Slider */}
+            <div className="pt-6 text-center">
+              <h3 className="text-2xl font-bold text-gray-900">
+                {sliderContent[currentIndex].title}
+              </h3>
+              <p className="text-lg font-semibold text-blue-600">
+                {sliderContent[currentIndex].subtitle}
+              </p>
+              <p className="mt-2 text-gray-600 h-12"> {/* Fixed height to prevent layout shift */}
+                {sliderContent[currentIndex].description}
+              </p>
+            </div>
           </div>
 
-          {/* Right Side Content (Previously on the Left) */}
+          {/* Right Side Content */}
           <div className="relative space-y-8">
             <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-medium">
               <Heart size={16} className="fill-current" />
@@ -130,7 +134,6 @@ export default function Hero() {
               </div>
             </div>
             
-            {/* Emergency Services Card - Adjusted to bottom-right */}
             <div className="absolute -bottom-6 -right-6 bg-white p-6 rounded-xl shadow-xl border-2 border-blue-100 hidden lg:block">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
