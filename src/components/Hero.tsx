@@ -142,9 +142,9 @@ export default function Hero() {
               <Heart size={16} className="fill-current" />
               <span>Your Health, Our Priority</span>
             </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
+            <h3 className="text-4xl sm:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
               Healthcare Beyond Treatment
-            </h1>
+            </h3>
             <p className="text-lg text-gray-600 leading-relaxed">
               Healthcare is more than just treatment — it is compassion, trust, and healing that embraces the whole person. Experience expert medical care with our specialist doctors.
             </p>
