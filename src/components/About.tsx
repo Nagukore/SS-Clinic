@@ -32,7 +32,7 @@ export default function About() {
             About Our Hospital
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            SS_Clinic is committed to providing exceptional healthcare services with a focus on patient well-being and advanced medical practices.  
+            Dedicated to providing exceptional healthcare services with compassion, expertise, and cutting-edge medical technology
           </p>
         </div>
 

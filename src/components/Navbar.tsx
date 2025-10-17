@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, X} from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,9 +21,10 @@ export default function Navbar() {
               <img
                 src="/images/logo.jpg"
                 alt="Srishakthi Clinic Logo"
-                className="h-14 w-14 object-contain transition-transform duration-300 group-hover:scale-105"
+                className="h-16 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
               />
-              <h1 className="text-xl font-bold text-gray-800 hidden sm:block">SS Clinic-Kudlu</h1>
+              {/* 👇 This is the updated line */}
+              <h1 className="text-xl font-bold text-gray-800">SS Clinic</h1>
             </a>
           </div>
 
