@@ -93,7 +93,7 @@ export default function Hero() {
   }
 
   return (
-    <section id="home" className="pt-20 bg-gradient-to-br from-blue-50 via-white to-blue-50">
+    <section id="home" className="pt-19 bg-gradient-to-br from-blue-50 via-white to-blue-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
 
