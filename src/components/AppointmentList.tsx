@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 
 interface Appointment {
   id: string;
-  appointmentID: string; // SS01, SS02...
+  appointmentID: string;
+  patientId: string; // ✅ --- Add patientId ---
   fullName: string;
   doctor: string;
   date: string;
@@ -12,6 +13,7 @@ interface Appointment {
   phone: string;
   message: string;
   status: string;
+  createdAt: any;
 }
 
 export default function AppointmentList() {
@@ -21,35 +23,50 @@ export default function AppointmentList() {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        const appointmentsQuery = query(collection(db, 'appointments'), orderBy('date', 'desc'));
-        const querySnapshot = await getDocs(appointmentsQuery);
+        const appointmentsCollection = collection(db, 'appointments');
+        const q = query(appointmentsCollection, orderBy('createdAt', 'asc'));
+        
+        const querySnapshot = await getDocs(q);
 
         const appointmentsData = querySnapshot.docs.map((doc, index) => {
           const data = doc.data();
+
+          let dateValue = data.date;
+          if (dateValue && typeof dateValue === 'object' && dateValue.toDate) {
+            dateValue = dateValue.toDate().toISOString().split('T')[0];
+          }
+          
+          const realAppointmentId = data.appointmentId || null;
+
           return {
             id: doc.id,
-            appointmentID: data.appointmentID || `SS${String(index + 1).padStart(2, '0')}`,
+            appointmentID: realAppointmentId || `SS${String(index + 1).padStart(2, '0')}`,
+            patientId: data.patientId || 'N/A', // ✅ --- Read patientId from data ---
             fullName: data.fullName || 'N/A',
             doctor: data.doctor || 'N/A',
-            date: data.date || 'N/A',
+            date: dateValue || 'N/A',
             time: data.time || 'N/A',
             phone: data.phone || 'N/A',
             message: data.message || '—',
             status: data.status || 'Booked',
+            createdAt: data.createdAt,
           } as Appointment;
         });
 
         setAppointments(appointmentsData);
+
       } catch (error) {
-        console.error("Error fetching appointments: ", error);
+        console.error('Error fetching appointments: ', error);
       } finally {
         setIsLoading(false);
       }
     };
+
     fetchAppointments();
   }, []);
 
   const getStatusColor = (status: string) => {
+    // ... (This function is unchanged)
     switch (status.toLowerCase()) {
       case 'booked':
         return 'bg-green-100 text-green-800';
@@ -63,7 +80,7 @@ export default function AppointmentList() {
   };
 
   if (isLoading) {
-    return <div className="text-center p-8">Loading appointments...</div>;
+    return <div className="text-center p-8 text-gray-500 animate-pulse">Loading appointments...</div>;
   }
 
   if (appointments.length === 0) {
@@ -77,6 +94,7 @@ export default function AppointmentList() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">App ID</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Patient ID</th> {/* ✅ New Column */}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Patient</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Doctor</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
@@ -91,6 +109,7 @@ export default function AppointmentList() {
             {appointments.map((app) => (
               <tr key={app.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4 text-sm font-semibold text-gray-800">{app.appointmentID}</td>
+                <td className="px-6 py-4 text-sm font-semibold text-gray-500">{app.patientId}</td> {/* ✅ New Data Cell */}
                 <td className="px-6 py-4 text-sm font-medium text-gray-900">{app.fullName}</td>
                 <td className="px-6 py-4 text-sm text-gray-600">{app.doctor}</td>
                 <td className="px-6 py-4 text-sm text-gray-600">{app.date}</td>

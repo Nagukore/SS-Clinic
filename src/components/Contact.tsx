@@ -1,104 +1,142 @@
-  // src/components/Contact.tsx
-  import { MapPin, Phone, Mail, Clock } from "lucide-react";
-  import { useState, useEffect } from "react";
-  import { db } from "../firebase";
-  import {
-    collection,
-    addDoc,
-    serverTimestamp,
-    getDocs,
-    query,
-    where,
-  } from "firebase/firestore";
-  import emailjs from "@emailjs/browser"; // ✅ EmailJS import at the top
+// src/components/Contact.tsx
+import { MapPin, Phone, Mail, Clock } from "lucide-react";
+import { useState, useEffect } from "react";
+import { db } from "../firebase";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
+import emailjs from "@emailjs/browser";
 
-  type FormData = {
-    fullName: string;
-    phone: string;
-    email: string;
-    doctor: string;
-    date: string;
-    time: string;
-    message: string;
+type FormData = {
+  fullName: string;
+  phone: string;
+  email: string;
+  doctor: string;
+  date: string;
+  time: string;
+  message: string;
+};
+
+export default function Contact() {
+  const [formData, setFormData] = useState<FormData>({
+    fullName: "",
+    phone: "",
+    email: "",
+    doctor: "",
+    date: "",
+    time: "",
+    message: "",
+  });
+
+  const [status, setStatus] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [slots, setSlots] = useState<string[]>([]);
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+
+  // --- generate slots when doctor/time selected ---
+  useEffect(() => {
+    if (formData.doctor && formData.date) {
+      const generatedSlots = generateSlots("09:00", "20:00", 7);
+      setSlots(generatedSlots);
+      fetchBookedSlots(formData.doctor, formData.date);
+    }
+  }, [formData.doctor, formData.date]);
+
+  // --- auto-clear messages ---
+  useEffect(() => {
+    if (status) {
+      const t = setTimeout(() => setStatus(""), 5000);
+      return () => clearTimeout(t);
+    }
+  }, [status]);
+
+  // --- slot generator ---
+  const generateSlots = (start: string, end: string, interval: number) => {
+    const result: string[] = [];
+    let [h, m] = start.split(":").map(Number);
+    const [eh, em] = end.split(":").map(Number);
+
+    while (h < eh || (h === eh && m < em)) {
+      result.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+      m += interval;
+      if (m >= 60) {
+        h++;
+        m -= 60;
+      }
+    }
+    return result;
   };
 
-  export default function Contact() {
-    const [formData, setFormData] = useState<FormData>({
-      fullName: "",
-      phone: "",
-      email: "",
-      doctor: "",
-      date: "",
-      time: "",
-      message: "",
-    });
+  // --- fetch already-booked slots from Firebase ---
+  const fetchBookedSlots = async (doctor: string, date: string) => {
+    try {
+      const q = query(
+        collection(db, "appointments"),
+        where("doctor", "==", doctor),
+        where("date", "==", date)
+      );
+      const snap = await getDocs(q);
+      const times = snap.docs.map((d) => d.data().time);
+      setBookedSlots(times);
+    } catch (e) {
+      console.error("Error fetching booked slots:", e);
+    }
+  };
 
-    const [status, setStatus] = useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
+  // --- form change handler ---
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
-    // --- new states for slots ---
-    const [slots, setSlots] = useState<string[]>([]);
-    const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+  // ✅ --- New function to find or create a patient ---
+  const getOrCreatePatient = async (
+    email: string,
+    fullName: string,
+    phone: string
+  ) => {
+    const patientsRef = collection(db, "patients");
+    // Query to find a patient by their email
+    const q = query(patientsRef, where("email", "==", email.toLowerCase()));
+    
+    const patientSnap = await getDocs(q);
 
-    // --- generate slots when doctor/time selected ---
-    useEffect(() => {
-      if (formData.doctor && formData.date) {
-        const generatedSlots = generateSlots("09:00", "20:00", 7);
-        setSlots(generatedSlots);
-        fetchBookedSlots(formData.doctor, formData.date);
-      }
-    }, [formData.doctor, formData.date]);
+    if (patientSnap.empty) {
+      // --- Create a new patient ---
+      console.log("No patient found, creating new one...");
+      // Get the total number of patients to create a new ID
+      const allPatientsSnap = await getDocs(patientsRef);
+      const newPatientNum = allPatientsSnap.size + 1;
+      const newPatientId = `P${String(newPatientNum).padStart(4, "0")}`; // e.g., P0001
 
-    // --- auto-clear messages ---
-    useEffect(() => {
-      if (status) {
-        const t = setTimeout(() => setStatus(""), 5000);
-        return () => clearTimeout(t);
-      }
-    }, [status]);
-
-    // --- slot generator ---
-    const generateSlots = (start: string, end: string, interval: number) => {
-      const result: string[] = [];
-      let [h, m] = start.split(":").map(Number);
-      const [eh, em] = end.split(":").map(Number);
-
-      while (h < eh || (h === eh && m < em)) {
-        result.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
-        m += interval;
-        if (m >= 60) {
-          h++;
-          m -= 60;
-        }
-      }
-      return result;
-    };
-
-    // --- fetch already-booked slots from Firebase ---
-    const fetchBookedSlots = async (doctor: string, date: string) => {
-      try {
-        const q = query(
-          collection(db, "appointments"),
-          where("doctor", "==", doctor),
-          where("date", "==", date)
-        );
-        const snap = await getDocs(q);
-        const times = snap.docs.map((d) => d.data().time);
-        setBookedSlots(times);
-      } catch (e) {
-        console.error("Error fetching booked slots:", e);
-      }
-    };
-
-    // --- form change handler ---
-    const handleChange = (
-      e: React.ChangeEvent<
-        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-      >
-    ) => {
-      const { name, value } = e.target;
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    };
+      const newPatientData = {
+        patientId: newPatientId,
+        email: email.toLowerCase(), // Store email as lowercase for consistency
+        fullName: fullName,
+        phone: phone,
+        createdAt: serverTimestamp(),
+      };
+      
+      // Save the new patient to the 'patients' collection
+      await addDoc(patientsRef, newPatientData);
+      
+      return newPatientId; // Return the new ID
+    } else {
+      // --- Return existing patient's ID ---
+      console.log("Found existing patient.");
+      // Return the ID from the first document found
+      return patientSnap.docs[0].data().patientId;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -106,7 +144,15 @@
     setStatus("Booking appointment...");
 
     try {
-      // --- Step 1: Check duplicate slot ---
+      // ✅ --- Step 1: Find or Create Patient ---
+      // This function now runs first to get the patientId
+      const patientId = await getOrCreatePatient(
+        formData.email,
+        formData.fullName,
+        formData.phone
+      );
+
+      // --- Step 2: Check duplicate slot ---
       const q = query(
         collection(db, "appointments"),
         where("doctor", "==", formData.doctor),
@@ -120,7 +166,7 @@
         return;
       }
 
-      // --- Step 2: Get last appointment ID ---
+      // --- Step 3: Get last appointment ID ---
       const snapshot = await getDocs(collection(db, "appointments"));
       const total = snapshot.size;
 
@@ -128,17 +174,19 @@
       const newIdNumber = total + 1;
       const newAppointmentId = `SS${String(newIdNumber).padStart(2, "0")}`;
 
-      // --- Step 3: Add new appointment to Firestore ---
+      // --- Step 4: Add new appointment to Firestore ---
       await addDoc(collection(db, "appointments"), {
-        appointmentId: newAppointmentId,
+        appointmentId: newAppointmentId, // The appointment ID (SS01, SS02)
+        patientId: patientId, // ✅ The new patient ID (P0001, P0002)
         ...formData,
         createdAt: serverTimestamp(),
         status: "booked",
       });
 
-      // --- Step 4: Send email confirmation via EmailJS ---
+      // --- Step 5: Send email confirmation via EmailJS ---
       const templateParams = {
         appointment_id: newAppointmentId,
+        patient_id: patientId, // ✅ Add patient_id to the email template
         patient_name: formData.fullName,
         doctor_name: formData.doctor,
         appointment_date: formData.date,
@@ -154,8 +202,10 @@
         "MGrfNH-8tMwQkb0fp" // Your Public Key
       );
 
-      // --- Step 5: Reset form and success message ---
-      setStatus(`✅ Appointment booked successfully! Your ID is ${newAppointmentId}`);
+      // --- Step 6: Reset form and success message ---
+      setStatus(
+        `✅ Appointment booked! Appt ID: ${newAppointmentId} (Patient ID: ${patientId})`
+      );
       setFormData({
         fullName: "",
         phone: "",
@@ -178,6 +228,7 @@
     const today = new Date().toISOString().split("T")[0];
 
     return (
+      // ... (The entire JSX/HTML return section is unchanged) ...
       <section
         id="contact"
         className="py-20 bg-gradient-to-br from-blue-50 to-white"
