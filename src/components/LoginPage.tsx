@@ -1,24 +1,43 @@
-import { useState } from 'react';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const auth = getAuth();
 
+  // ✅ Whitelisted admin (doctor) emails
+  const allowedAdmins = [
+    "ssclinicbangalore@gmail.com",
+    "nagesh.amcec@gmail.com"
+  ];
+
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsSubmitting(true);
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate('/dashboard');
-    } catch (err) {
-      setError('Invalid email or password. Please try again.');
+      // Try Firebase Authentication login
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const loggedInEmail = userCredential.user.email?.toLowerCase();
+
+      // ✅ Check if the logged-in email is a whitelisted admin
+      if (loggedInEmail && allowedAdmins.includes(loggedInEmail)) {
+        navigate("/dashboard"); // Redirect to appointment list
+      } else {
+        setError("Unauthorized access — only doctors can log in here.");
+      }
+    } catch (err: any) {
+      if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
+        setError("Invalid email or password. Please try again.");
+      } else {
+        setError("Login failed. Please check your credentials.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -71,7 +90,7 @@ export default function LoginPage() {
             disabled={isSubmitting}
             className="w-full py-3 rounded-xl text-white font-semibold bg-blue-600 hover:bg-blue-700 transition-all shadow-md hover:shadow-lg disabled:bg-gray-400"
           >
-            {isSubmitting ? 'Signing In...' : 'Sign In'}
+            {isSubmitting ? "Signing In..." : "Sign In"}
           </button>
         </form>
 

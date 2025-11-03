@@ -1,7 +1,6 @@
-// src/components/ProtectedRoute.tsx
-import React from 'react';
-import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
-import { Navigate } from 'react-router-dom';
+import React from "react";
+import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -9,27 +8,54 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [user, setUser] = React.useState<User | null>(null);
-  const [loading, setLoading] = React.useState(true);
+  const [checkingAuth, setCheckingAuth] = React.useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
   const auth = getAuth();
 
+  // ✅ Listen for Firebase authentication changes
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setLoading(false);
+      setCheckingAuth(false);
     });
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, [auth]);
 
-  if (loading) {
-    return <div>Loading...</div>; // Or a spinner component
+  // ✅ Safe logout (kept internally, not displayed)
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      if (location.pathname.startsWith("/dashboard")) {
+        navigate("/admin");
+      } else {
+        navigate("/login");
+      }
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
+  // ✅ Loader while checking authentication
+  if (checkingAuth) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-white">
+        <div className="text-blue-600 text-lg font-medium animate-pulse">
+          Checking session...
+        </div>
+      </div>
+    );
   }
 
+  // ✅ Redirect if unauthenticated
   if (!user) {
-    // If user is not logged in, redirect to the login page
-    return <Navigate to="/login" replace />;
+    return location.pathname.startsWith("/dashboard") ? (
+      <Navigate to="/admin" replace />
+    ) : (
+      <Navigate to="/login" replace />
+    );
   }
 
-  // If user is logged in, show the protected content (the dashboard)
+  // ✅ Authenticated → show protected content (no logout button)
   return <>{children}</>;
 }
