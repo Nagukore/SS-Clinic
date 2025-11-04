@@ -1,219 +1,289 @@
-import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
+import { useState, useEffect, useRef } from "react";
+import { MessageCircle, X, Send, Bot, User, Zap, Brain } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import axios from "axios";
 
 interface Message {
   id: number;
   text: string;
-  sender: 'user' | 'bot';
+  sender: "user" | "bot";
   timestamp: Date;
 }
 
 export default function Chatbot() {
+  // -------------------- STATES --------------------
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      text: "Hello! I'm Srishakthi Clinic's assistant. I can help you with information about our doctors, services, medicines, and how to navigate our website. How can I assist you today?",
-      sender: 'bot',
-      timestamp: new Date()
-    }
-  ]);
-  const [inputMessage, setInputMessage] = useState('');
+  {
+    id: 1,
+    text: `
+    👋 <b>Welcome to Srishakthi Clinic!</b><br><br>
+    I can assist you with the following:
+    <ul class="list-disc ml-6 mt-2 text-gray-700">
+      <li>📅 Booking appointments</li>
+      <li>👨‍⚕️ Doctor details & timings</li>
+      <li>📍 Clinic location & directions</li>
+      <li>📞 Contact information</li>
+      <li>💊 Available services</li>
+    </ul>
+    <br>
+    Try asking about <b>"appointments"</b> or <b>"clinic hours"</b> to get started!
+    `,
+    sender: "bot",
+    timestamp: new Date(),
+  },
+]);
+
+  const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [mode, setMode] = useState<"fast" | "gemini">("fast"); // ✅ Switch mode
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // -------------------- GEMINI CONFIG --------------------
+  const GEMINI_API_KEY = "AIzaSyDzrJhfycYhtQInCtSTY6jRc9WrM9FSuuE";
+  const GEMINI_MODEL = "gemini-2.5-flash";
+
+  // -------------------- AUTO SCROLL --------------------
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+  useEffect(() => scrollToBottom(), [messages]);
+
+  // -------------------- FAST PRESET RESPONSES --------------------
+  const getFastResponse = (msg: string): string | null => {
+    const text = msg.toLowerCase();
+
+    if (text.includes("appointment") || text.includes("book")) {
+      return `📅 You can book an appointment here → <a href="#appointment" class="text-blue-700 font-bold underline">Book Appointment</a>`;
+    }
+
+    if (text.includes("contact") || text.includes("call") || text.includes("phone")) {
+      return `📞 <b>Contact Us:</b><br>
+      Main: +91 9602154222<br>
+      Appointments: +91 9602154222<br>
+      Email: <a href="mailto:ssclinicbangalore@gmail.com" class="text-blue-700 font-bold underline">ssclinicbangalore@gmail.com</a>`;
+    }
+
+    if (text.includes("location") || text.includes("where")) {
+      return `📍 <b>Location:</b> SS Clinic, Kudlu, Bangalore, Karnataka - 560068<br>
+      <a href="#contact" class="text-blue-700 font-bold underline">📍 View Map</a>`;
+    }
+
+    if (text.includes("timing") || text.includes("hours")) {
+      return `🕒 <b>Clinic Timings:</b><br>
+      Monday – Saturday: 9:00 AM – 8:00 PM<br>
+      Sunday: <span class="text-red-500 font-semibold">Closed</span>`;
+    }
+
+    if (text.includes("doctor") || text.includes("sujith")) {
+      return `👨‍⚕️ <b>Dr. Sujith M S</b> — Physician<br>
+      ⏰ 6:00 PM – 9:00 PM<br><br>
+      👩‍⚕️ <b>Dr. Ashwini B S</b> — Pediatrician<br>
+      ⏰ 5:45 PM – 7:45 PM<br>
+      <a href="#appointment" class="text-blue-700 font-bold underline">Book Now</a>`;
+    }
+
+    if (text.includes("service") || text.includes("treatment")) {
+      return `💊 <b>Our Services:</b><br>
+      • Psychiatry & Counseling<br>
+      • Pediatric Care<br>
+      • Immunization<br>
+      • Chronic Disease Management<br>
+      • Health Checkups`;
+    }
+
+    if (text.includes("hello") || text.includes("hi")) {
+      return "👋 Hello there! How can I help you today?";
+    }
+
+    if (text.includes("thank")) {
+      return "😊 You're very welcome! Let me know if I can assist further.";
+    }
+
+    return null; // fallback to Gemini
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const getAIResponse = (userMessage: string): string => {
-    const lowerMessage = userMessage.toLowerCase();
-
-    if (lowerMessage.includes('doctor') || lowerMessage.includes('physician') || lowerMessage.includes('sujith')) {
-      return "We have two specialist doctors at Srishakthi Clinic:\n\n1. Dr. Sujith M S - Consultant Physician & Diabetologist (MBBS, DNB, PGDCED)\nSpecializes in: Diabetes Management, Hypertension, Infectious Diseases, and Respiratory Conditions\n\n2. Dr. Ashwini B S - Consultant Paediatrician (MBBS, DCH, DNB)\nSpecializes in: Neonatal Care, Growth & Development, Immunization, Infections, Allergies, and Asthma\n\nYou can book an appointment by clicking 'Book Appointment' button or scrolling to the contact section.";
+  // -------------------- GEMINI Fallback --------------------
+  const getGeminiResponse = async (query: string): Promise<string> => {
+    try {
+      const res = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          contents: [{ parts: [{ text: query }] }],
+        }
+      );
+      return (
+        res.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+        "I'm not sure, but I can help you find out!"
+      );
+    } catch (error) {
+      console.error("Gemini API Error:", error);
+      return "⚠️ Gemini service unavailable. Try again later or switch to Fast mode.";
     }
-
-    if (lowerMessage.includes('pediatric') || lowerMessage.includes('paediatric') || lowerMessage.includes('child') || lowerMessage.includes('ashwini') || lowerMessage.includes('kids')) {
-      return "For pediatric care, please consult Dr. Ashwini B S, our Consultant Paediatrician. She specializes in:\n- Neonatal Care\n- Growth & Development monitoring\n- Immunization programs\n- Treatment of Infections, Allergies, and Asthma\n\nDr. Ashwini has impressive credentials (MBBS, DCH - State Topper, DNB). You can book an appointment in the Contact section.";
-    }
-
-    if (lowerMessage.includes('diabetes') || lowerMessage.includes('diabetic') || lowerMessage.includes('sugar') || lowerMessage.includes('blood sugar')) {
-      return "For diabetes management, Dr. Sujith M S is our specialist Diabetologist. He provides:\n- Comprehensive diabetes care\n- Blood sugar monitoring\n- Personalized treatment plans\n- Lifestyle and dietary guidance\n- Management of diabetes complications\n\nPlease book an appointment to discuss your specific needs.";
-    }
-
-    // --- MODIFIED: Response now includes a clickable HTML link ---
-    if (lowerMessage.includes('appointment') || lowerMessage.includes('book') || lowerMessage.includes('schedule')) {
-return `To book an appointment, you can click this link: <a href="#appointment" class="text-blue-600 font-bold underline hover:text-blue-800 transition-colors">Book Appointment Now</a>.\n\nAlternatively, you can:\n1. Scroll down to the Contact section\n2. Fill in your details\n3. Select your preferred doctor and date\n4. Submit the form\n\nYou can also call us directly for immediate appointments.`;    }
-
-    if (lowerMessage.includes('service') || lowerMessage.includes('treatment') || lowerMessage.includes('what do you')) {
-      return "Srishakthi Clinic offers:\n\n🩸 Diabetes Management\n❤️ Hypertension Care\n👶 Pediatric Care\n💉 Immunization\n🦠 Infectious Disease Treatment\n🩺 General Medicine\n\nScroll to the 'Services' section to learn more.";
-    }
-
-    if (lowerMessage.includes('contact') || lowerMessage.includes('phone') || lowerMessage.includes('call') || lowerMessage.includes('email')) {
-      return "You can reach us at:\n📞 +91 9876543210\n📧 info@srishakthiclinic.com\n📧 appointments@srishakthiclinic.com\n\n⏰ Mon–Sat: 9 AM–8 PM | Sun: 9 AM–2 PM | Emergency: 24/7";
-    }
-
-    if (lowerMessage.includes('location') || lowerMessage.includes('address') || lowerMessage.includes('where')) {
-      return "📍 Srishakthi Clinic\n123 Healthcare Avenue, Medical District\nCity, State 560001\n\nFind us in the Contact section for a map view.";
-    }
-
-    if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
-      return "Hello! Welcome to Srishakthi Clinic 👋\nHow can I assist you today?";
-    }
-
-    if (lowerMessage.includes('thank') || lowerMessage.includes('thanks')) {
-      return "You're welcome! 😊 Let me know if you need more help.";
-    }
-
-    return "I can help with:\n👨‍⚕️ Doctors Info\n📅 Appointments\n🏥 Services\n📞 Contact\n🕘 Timings\n💉 Vaccinations\n👶 Pediatric & Diabetes Care\n\nPlease ask your question!";
   };
 
-  const handleSendMessage = () => {
+  // -------------------- SEND MESSAGE --------------------
+  const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
-    const userMessage: Message = {
-      id: messages.length + 1,
+    const userMsg: Message = {
+      id: Date.now(),
       text: inputMessage,
-      sender: 'user',
-      timestamp: new Date()
+      sender: "user",
+      timestamp: new Date(),
     };
-
-    setMessages([...messages, userMessage]);
-    setInputMessage('');
+    setMessages((prev) => [...prev, userMsg]);
+    setInputMessage("");
     setIsTyping(true);
 
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: messages.length + 2,
-        text: getAIResponse(inputMessage),
-        sender: 'bot',
-        timestamp: new Date()
-      };
+    let botReply: string | null = null;
 
-      setMessages(prev => [...prev, botResponse]);
-      setIsTyping(false);
-    }, 1000);
+    if (mode === "fast") {
+      botReply = getFastResponse(inputMessage);
+      if (!botReply) botReply = "🤔 Hmm... I couldn’t find that. Try switching to Gemini mode!";
+    } else {
+      botReply = await getGeminiResponse(inputMessage);
+    }
+
+    const botMsg: Message = {
+      id: Date.now() + 1,
+      text: botReply ?? "⚠️ No response available.",
+      sender: "bot",
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, botMsg]);
+    setIsTyping(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
 
+  // -------------------- UI RENDERING --------------------
   return (
     <>
       {/* Floating Chat Button */}
       {!isOpen && (
-        <button
+        <motion.button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 bg-blue-600 text-white p-4 rounded-full shadow-2xl hover:bg-blue-700 transition-all duration-300 hover:scale-110 z-50 group"
-          aria-label="Open chat"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          className="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-xl hover:bg-blue-700 transition-all z-50"
         >
           <MessageCircle size={28} />
-          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center font-bold animate-pulse">
-            1
-          </span>
-        </button>
+        </motion.button>
       )}
 
       {/* Chat Window */}
       {isOpen && (
-        <div
-          className="fixed bottom-0 right-0 sm:bottom-6 sm:right-6 w-full sm:w-96 h-[90vh] sm:h-[600px] bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col z-50 border border-gray-200"
-        >
+        <div className="fixed bottom-0 right-0 sm:bottom-6 sm:right-6 w-full sm:w-96 h-[90vh] sm:h-[600px] bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col border border-gray-200 z-50 overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-2xl flex items-center justify-between">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-2xl flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                <Bot size={24} />
+              <div className="w-10 h-10 bg-white/25 rounded-full flex items-center justify-center">
+                <Bot size={22} />
               </div>
               <div>
-                <h3 className="font-bold text-sm sm:text-base">Srishakthi Assistant</h3>
-                <p className="text-xs text-blue-100">Online - Ready to help</p>
+                <h3 className="font-semibold text-sm">Srishakthi Assistant</h3>
+                <p className="text-xs text-blue-100">
+                  {mode === "fast" ? "⚡ Fast Mode" : "🧠 Gemini Mode"}
+                </p>
               </div>
             </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="hover:bg-white/20 p-2 rounded-lg transition-colors"
-              aria-label="Close chat"
-            >
+            <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-2 rounded-lg">
               <X size={20} />
             </button>
           </div>
 
+          {/* Mode Switch */}
+          <div className="flex justify-center gap-3 p-2 bg-blue-50 border-b">
+            <button
+              onClick={() => setMode("fast")}
+              className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${
+                mode === "fast" ? "bg-blue-600 text-white" : "bg-white text-blue-700"
+              }`}
+            >
+              <Zap size={14} /> Fast
+            </button>
+            <button
+              onClick={() => setMode("gemini")}
+              className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${
+                mode === "gemini" ? "bg-blue-600 text-white" : "bg-white text-blue-700"
+              }`}
+            >
+              <Brain size={14} /> Gemini
+            </button>
+          </div>
+
           {/* Chat Body */}
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 bg-gray-50">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex gap-2 items-start ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                {message.sender === 'bot' && (
-                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Bot size={18} className="text-white" />
-                  </div>
-                )}
-                <div
-                  className={`max-w-[80%] sm:max-w-[75%] p-3 rounded-2xl ${
-                    message.sender === 'user'
-                      ? 'bg-blue-600 text-white rounded-br-none'
-                      : 'bg-white text-gray-800 rounded-bl-none shadow-md border border-gray-200'
-                  }`}
+          <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50">
+            <AnimatePresence>
+              {messages.map((m) => (
+                <motion.div
+                  key={m.id}
+                  initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.25 }}
+                  className={`flex ${m.sender === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  {/* --- This part renders the message as HTML to make links clickable --- */}
-                  <div 
-                    className="text-sm whitespace-pre-line leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: message.text }} 
+                  {m.sender === "bot" && (
+                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mr-2">
+                      <Bot size={18} className="text-white" />
+                    </div>
+                  )}
+                  <div
+                    className={`max-w-[80%] p-3 rounded-2xl ${
+                      m.sender === "user"
+                        ? "bg-blue-600 text-white rounded-br-none"
+                        : "bg-white text-gray-800 shadow border border-gray-200 rounded-bl-none"
+                    }`}
+                    dangerouslySetInnerHTML={{ __html: m.text }}
                   />
-                </div>
-                {message.sender === 'user' && (
-                  <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
-                    <User size={18} className="text-gray-600" />
-                  </div>
-                )}
-              </div>
-            ))}
+                  {m.sender === "user" && (
+                    <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center ml-2">
+                      <User size={18} className="text-gray-600" />
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
             {isTyping && (
-              <div className="flex gap-2 justify-start">
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
                   <Bot size={18} className="text-white" />
                 </div>
-                <div className="bg-white p-3 rounded-2xl rounded-bl-none shadow-md border border-gray-200">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-300"></div>
-                  </div>
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-300"></div>
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Area */}
-          <div className="p-3 sm:p-4 border-t border-gray-200 bg-white rounded-b-2xl">
+          {/* Input Field */}
+          <div className="p-3 border-t bg-white rounded-b-2xl">
             <div className="flex gap-2">
               <input
                 type="text"
+                placeholder="Ask about doctors, appointments..."
+                className="flex-1 border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-blue-500 text-sm outline-none"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Ask about doctors, services..."
-                className="flex-1 px-4 py-2 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
               />
               <button
                 onClick={handleSendMessage}
-                disabled={!inputMessage.trim() || isTyping}
-                className="bg-blue-600 text-white p-2 sm:p-3 rounded-xl hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                aria-label="Send message"
+                className="bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 transition"
               >
-                <Send size={20} />
+                <Send size={18} />
               </button>
             </div>
           </div>

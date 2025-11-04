@@ -5,9 +5,8 @@ import { ArrowRight, Heart } from 'lucide-react';
 function WelcomeLoader({ isFading }: { isFading: boolean }) {
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-white transition-opacity duration-500 ease-out ${
-        isFading ? 'opacity-0' : 'opacity-100'
-      }`}
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-white transition-opacity duration-500 ease-out ${isFading ? 'opacity-0' : 'opacity-100'
+        }`}
     >
       <div className="text-center animate-fade-in-pulse">
         <img
@@ -51,11 +50,11 @@ const sliderContent = [
     description: 'Partner with our specialists for a clear understanding of your health.'
   },
   {
-    src: '/images/hospital.jpg',
-    alt: 'Comfortable and clean hospital room for inpatient care',
-    title: 'Comprehensive Inpatient Care',
-    subtitle: 'Dedicated to Your Recovery',
-    description: 'Comfort and dedicated medical attention for your well-being.'
+    src: '/images/pharmacy.jpg',
+    alt: 'Well-organized pharmacy with a pharmacist assisting a patient',
+    title: 'Trusted Medicines, Personalized Care',
+    subtitle: 'SS Clinic Pharmacy',
+    description: 'Your one-stop destination for genuine prescriptions, over-the-counter medicines, and expert pharmaceutical guidance — all under one roof.'
   },
 ];
 
@@ -73,7 +72,7 @@ export default function Hero() {
       clearTimeout(loadTimer);
     };
   }, []);
-  
+
   // Effect to manage the image slider's automatic progression
   useEffect(() => {
     if (!isLoading) {
@@ -105,9 +104,8 @@ export default function Hero() {
                   key={index}
                   src={content.src}
                   alt={content.alt}
-                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
-                    currentIndex === index ? 'opacity-100' : 'opacity-0'
-                  }`}
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${currentIndex === index ? 'opacity-100' : 'opacity-0'
+                    }`}
                 />
               ))}
             </div>
@@ -116,9 +114,8 @@ export default function Hero() {
                 <button
                   key={index}
                   onClick={() => goToSlide(index)}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                    currentIndex === index ? 'bg-blue-600 scale-125' : 'bg-gray-300 hover:bg-gray-400'
-                  }`}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${currentIndex === index ? 'bg-blue-600 scale-125' : 'bg-gray-300 hover:bg-gray-400'
+                    }`}
                   aria-label={`Go to slide ${index + 1}`}
                 ></button>
               ))}
