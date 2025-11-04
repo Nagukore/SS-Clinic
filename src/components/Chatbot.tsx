@@ -14,40 +14,56 @@ export default function Chatbot() {
   // -------------------- STATES --------------------
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-  {
-    id: 1,
-    text: `
-    👋 <b>Welcome to Srishakthi Clinic!</b><br><br>
-    I can assist you with the following:
-    <ul class="list-disc ml-6 mt-2 text-gray-700">
-      <li>📅 Booking appointments</li>
-      <li>👨‍⚕️ Doctor details & timings</li>
-      <li>📍 Clinic location & directions</li>
-      <li>📞 Contact information</li>
-      <li>💊 Available services</li>
-    </ul>
-    <br>
-    Try asking about <b>"appointments"</b> or <b>"clinic hours"</b> to get started!
-    `,
-    sender: "bot",
-    timestamp: new Date(),
-  },
-]);
+    {
+      id: 1,
+      text: `
+      👋 <b>Welcome to Srishakthi Clinic!</b><br><br>
+      I can assist you with the following:
+      <ul class="list-disc ml-6 mt-2 text-gray-700">
+        <li>📅 Booking appointments</li>
+        <li>👨‍⚕️ Doctor details & timings</li>
+        <li>📍 Clinic location & directions</li>
+        <li>📞 Contact information</li>
+        <li>💊 Available services</li>
+      </ul>
+      <br>
+      Try asking about <b>"appointments"</b> or <b>"clinic hours"</b> to get started!
+      `,
+      sender: "bot",
+      timestamp: new Date(),
+    },
+  ]);
 
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [mode, setMode] = useState<"fast" | "gemini">("fast"); // ✅ Switch mode
+  const [mode, setMode] = useState<"fast" | "gemini">("fast");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // -------------------- GEMINI CONFIG --------------------
   const GEMINI_API_KEY = "AIzaSyDzrJhfycYhtQInCtSTY6jRc9WrM9FSuuE";
   const GEMINI_MODEL = "gemini-2.5-flash";
 
-  // -------------------- AUTO SCROLL --------------------
+  // -------------------- SCROLL CONTROL --------------------
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
   useEffect(() => scrollToBottom(), [messages]);
+
+  // ✅ Prevent layout shift while allowing chatbot scroll
+  useEffect(() => {
+    if (isOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+    } else {
+      const scrollY = document.body.style.top;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      window.scrollTo(0, parseInt(scrollY || "0") * -1);
+    }
+  }, [isOpen]);
 
   // -------------------- FAST PRESET RESPONSES --------------------
   const getFastResponse = (msg: string): string | null => {
@@ -100,7 +116,7 @@ export default function Chatbot() {
       return "😊 You're very welcome! Let me know if I can assist further.";
     }
 
-    return null; // fallback to Gemini
+    return null;
   };
 
   // -------------------- GEMINI Fallback --------------------
@@ -180,7 +196,7 @@ export default function Chatbot() {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-0 right-0 sm:bottom-6 sm:right-6 w-full sm:w-96 h-[90vh] sm:h-[600px] bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col border border-gray-200 z-50 overflow-hidden">
+        <div className="fixed bottom-0 left-0 right-0 sm:bottom-6 sm:right-6 sm:left-auto w-[95%] sm:w-96 h-[85vh] sm:h-[600px] mx-auto bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col border border-gray-200 z-50 overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-2xl flex justify-between items-center">
             <div className="flex items-center gap-3">
