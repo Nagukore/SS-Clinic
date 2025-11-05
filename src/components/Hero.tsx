@@ -15,7 +15,7 @@ function WelcomeLoader({ isFading }: { isFading: boolean }) {
           className="w-32 h-32 mx-auto"
         />
         <h1 className="mt-4 text-3xl font-bold text-gray-800 tracking-wider">
-          Shrishakthi Clinic
+          SS Clinic
         </h1>
         <p className="mt-2 text-lg text-blue-600">
           Holistic Healing & Wellness
@@ -31,7 +31,7 @@ const sliderContent = [
   {
     src: '/images/clinic.jpg',
     alt: 'Modern and welcoming clinic reception',
-    title: 'Shrishakthi Clinic',
+    title: 'SS Clinic',
     subtitle: 'Modern & Welcoming Care',
     description: 'Experience compassionate and personalized care in a comfortable environment.'
   },
