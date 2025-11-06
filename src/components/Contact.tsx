@@ -1,6 +1,6 @@
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import React, { useEffect, useState, useRef } from "react";
-import { db } from "../firebase";
+import { db } from "../firebase"; // Make sure this path is correct
 import {
   collection,
   addDoc,
@@ -29,6 +29,7 @@ type FormData = {
   message: string;
 };
 
+// --- MAIN COMPONENT ---
 export default function Contact() {
   // Form state
   const [formData, setFormData] = useState<FormData>({
@@ -325,7 +326,6 @@ export default function Contact() {
 
     try {
       // --- Race Condition Check ---
-      // Ensure slot wasn't *just* booked by someone else
       const q = query(
         collection(db, "appointments"),
         where("doctor", "==", formData.doctor),
@@ -348,7 +348,6 @@ export default function Contact() {
       );
 
       // Create appointment ID (e.g., "SS01", "SS02")
-      // Note: This sequential ID method can have race conditions at high volume
       const snapshot = await getDocs(collection(db, "appointments"));
       const total = snapshot.size;
       const appointmentId = `SS${String(total + 1).padStart(2, "0")}`;
@@ -359,7 +358,7 @@ export default function Contact() {
         patientId,
         ...formData,
         createdAt: serverTimestamp(),
-        status: "booked",
+        status: "booked", // Default status
       });
 
       // Send confirmation email
@@ -383,6 +382,11 @@ export default function Contact() {
       } catch (err) {
         console.warn("EmailJS confirmation error:", err);
         // Don't fail the whole booking if email fails
+        setStatus(
+          `✅ Appt ${appointmentId} booked! (But confirmation email failed to send)`
+        );
+        setIsSubmitting(false); // Manually set here
+        return; // Exit
       }
 
       setStatus(
@@ -404,214 +408,240 @@ export default function Contact() {
       console.error("Booking error:", err);
       setStatus("❌ Booking failed. Try again later.");
     } finally {
-      setIsSubmitting(false);
+      // Only set if not already set by email error
+      if (isSubmitting) {
+        setIsSubmitting(false);
+      }
     }
   };
 
+  // --- STYLING ---
   const today = new Date().toISOString().split("T")[0];
 
+  // Tailwind classes for form inputs
+  const inputClass =
+    "w-full px-4 py-3 rounded-lg bg-white border border-slate-300 text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow";
+
+  const buttonPrimaryClass =
+    "w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed";
+
   return (
-    <section
-      id="contact"
-      className="py-20 bg-gradient-to-br from-blue-50 to-white"
-    >
+    <section id="contact" className="py-20 md:py-24 bg-slate-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+        
+        {/* ✅ HEADER */}
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
             Get In Touch
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Have questions or need to schedule an appointment? We're here to help
+          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+            Have questions or need to book an appointment? We're here to help.
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-12 items-start">
-          {/* Left: Contact Info */}
-          <div className="space-y-8">
-            <a
-              href="https://maps.google.com/?q=SS+Clinic,Kudlu,Bangalore,Karnataka,560068"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex gap-6 items-center group hover:bg-gray-50 p-4 rounded-xl transition-all duration-300"
-            >
-              <div className="w-14 h-14 bg-blue-600 rounded-lg flex items-center justify-center">
-                <MapPin className="text-white" size={24} />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Visit Us</h3>
-                <p className="text-gray-600">
-                  SS Clinic
-                  <br />
-                  Kudlu, Bangalore, Karnataka 560068
-                </p>
-              </div>
-            </a>
+        {/* ✅ GRID (This is the responsive part) */}
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-start">
+          
+          {/* LEFT: Contact Info (Restored layout) */}
+          <div className="space-y-6">
+            {[
+              {
+                icon: MapPin,
+                title: "Visit Us",
+                lines: ["SS Clinic", "Kudlu, Bangalore, Karnataka 560068"],
+                href: "https://maps.google.com/?q=SS+Clinic,Kudlu,Bangalore,Karnataka,560068",
+              },
+              {
+                icon: Phone,
+                title: "Call Us",
+                lines: ["+91 9602154222"],
+                href: "tel:+919602154222",
+              },
+              {
+                icon: Mail,
+                title: "Email Us",
+                lines: ["ssclinicbangalore@gmail.com"],
+                href: "mailto:ssclinicbangalore@gmail.com",
+              },
+              {
+                icon: Clock,
+                title: "Working Hours",
+                lines: [
+                  "Mon – Sat: 4:00 PM – 12:00 AM",
+                  "Sunday: Closed",
+                  "Emergency: 24/7 Available",
+                ],
+                href: null,
+              },
+            ].map((item) => (
+              <a
+                key={item.title}
+                href={item.href ?? undefined}
+                target={item.href ? "_blank" : undefined}
+                rel="noopener noreferrer"
+                className={`
+                  grid grid-cols-[56px_1fr] items-start gap-4 p-6 rounded-2xl
+                  bg-white shadow-lg border border-slate-100
+                  transition-all duration-300 ease-in-out
+                  ${item.href ? "hover:shadow-xl hover:-translate-y-1 hover:border-blue-200" : "cursor-default"}
+                `}
+              >
+                {/* Fixed-size icon cell (56px width) */}
+                <div className="flex-shrink-0 w-14 h-14 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                  <item.icon size={28} />
+                </div>
 
-            <a
-              href="tel:+919602154222"
-              className="flex gap-6 items-center group hover:bg-gray-50 p-4 rounded-xl transition-all duration-300"
-            >
-              <div className="w-14 h-14 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Phone className="text-white" size={24} />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Call Us</h3>
-                <p className="text-gray-600 leading-relaxed">+91 9602154222</p>
-              </div>
-            </a>
-
-            <a
-              href="mailto:ssclinicbangalore@gmail.com"
-              className="flex gap-6 items-center group hover:bg-gray-50 p-4 rounded-xl transition-all duration-300"
-            >
-              <div className="w-14 h-14 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Mail className="text-white" size={24} />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Email Us</h3>
-                <p className="text-gray-600">ssclinicbangalore@gmail.com</p>
-              </div>
-            </a>
-
-            <div className="flex gap-6 items-center p-4">
-              <div className="w-14 h-14 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Clock className="text-white" size={24} />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  Working Hours
-                </h3>
-                <p className="text-gray-600 leading-relaxed">
-                  Monday - Saturday: 4:00 PM - 12:00 AM
-                  <br />
-                  Sunday: Closed
-                  <br />
-                  Emergency: 24/7 Available
-                </p>
-              </div>
-            </div>
+                {/* Text cell (takes remaining space) */}
+                <div className="min-w-0">
+                  <h3 className="text-lg font-semibold text-slate-900">
+                    {item.title}
+                  </h3>
+                  <div className="mt-1 text-base text-slate-700 break-words">
+                      {item.lines.map((l) => (
+                        <span key={l} className="block">{l}</span>
+                      ))}
+                  </div>
+                </div>
+              </a>
+            ))}
           </div>
 
-          {/* Right: Appointment Form */}
+          {/* Right: Appointment Form (Restored layout) */}
           <div
             id="appointment"
-            className="bg-white p-8 rounded-2xl shadow-xl border border-blue-100"
+            className="bg-white p-8 md:p-10 rounded-2xl shadow-xl border border-slate-200"
           >
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">
+            <h3 className="text-3xl font-bold text-slate-900 mb-8">
               Book an Appointment
             </h3>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <input
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                required
-                placeholder="Full Name"
-                className="w-full px-4 py-3 border rounded-lg"
-              />
-
-              <input
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                required
-                placeholder="Phone Number"
-                className="w-full px-4 py-3 border rounded-lg"
-              />
+            <form onSubmit={handleSubmit} className="space-y-5">
+              
+              <div className="grid sm:grid-cols-2 gap-5">
+                <input
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  required
+                  placeholder="Full Name"
+                  className={inputClass}
+                />
+                <input
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  required
+                  placeholder="Phone Number"
+                  className={inputClass}
+                />
+              </div>
 
               {/* Email + OTP column */}
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   name="email"
+                  type="email"
                   value={formData.email}
                   onChange={handleChange}
                   required
                   placeholder="Email address"
-                  className="flex-1 px-4 py-3 border rounded-lg"
+                  className={`${inputClass} flex-1`}
+                  disabled={isVerified}
                 />
 
                 {/* Send OTP button */}
                 <button
                   type="button"
                   onClick={handleSendOtp}
-                  className="px-4 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
-                  disabled={!formData.email || isVerified}
+                  className={`px-5 py-3 rounded-lg font-semibold transition whitespace-nowrap ${
+                    isVerified
+                      ? "bg-green-100 text-green-700 cursor-default"
+                      : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                  } disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed`}
+                  disabled={!formData.email || isVerified || otpCountdown > 0}
                 >
-                  {isVerified ? "Verified" : otpSent ? "Resend" : "Send OTP"}
+                  {isVerified ? "Verified ✅" : (otpCountdown > 0 ? `Resend in ${otpCountdown}s` : "Send OTP")}
                 </button>
               </div>
 
               {/* OTP input + verify */}
               {otpSent && (
-                <div className="flex items-center gap-3">
-                  <input
-                    value={otpValue}
-                    onChange={(e) => setOtpValue(e.target.value)}
-                    placeholder="Enter 6-digit code"
-                    className="flex-1 px-4 py-3 border rounded-lg"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleVerifyOtp}
-                    className="px-4 py-3 rounded-lg bg-green-600 text-white hover:bg-green-700 transition"
-                  >
-                    Verify
-                  </button>
-                  <div className="text-sm text-gray-600">
-                    {otpCountdown > 0 ? `Expires in ${otpCountdown}s` : "Expired"}
+                <div className="bg-slate-50 p-4 rounded-lg space-y-3 border border-slate-200">
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <input
+                      value={otpValue}
+                      onChange={(e) => setOtpValue(e.target.value)}
+                      placeholder="Enter 6-digit code"
+                      className={`${inputClass} flex-1`}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleVerifyOtp}
+                      className="w-full sm:w-auto px-5 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
+                    >
+                      Verify
+                    </button>
                   </div>
+                  {otpCountdown > 0 && (
+                    <p className="text-sm text-slate-600 text-center">
+                      Expires in {otpCountdown}s
+                    </p>
+                  )}
                 </div>
               )}
 
-              <select
-                name="doctor"
-                value={formData.doctor}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 border rounded-lg"
-              >
-                <option value="">-- Select Doctor --</option>
-                <option value="Dr. Sujith M S">Dr. Sujith M S - Physician</option>
-                <option value="Dr. Ashwini B S">
-                  Dr. Ashwini B S - Pediatrician
-                </option>
-              </select>
+              <div className="grid sm:grid-cols-2 gap-5">
+                <select
+                  name="doctor"
+                  value={formData.doctor}
+                  onChange={handleChange}
+                  required
+                  className={inputClass}
+                >
+                  <option value="">-- Select Doctor --</option>
+                  <option value="Dr. Sujith M S">Dr. Sujith M S - Physician</option>
+                  <option value="Dr. Ashwini B S">
+                    Dr. Ashwini B S - Pediatrician
+                  </option>
+                </select>
 
-              <input
-                type="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                required
-                min={today}
-                className="w-full px-4 py-3 border rounded-lg"
-              />
+                <input
+                  type="date"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleChange}
+                  required
+                  min={today}
+                  className={inputClass}
+                />
+              </div>
 
               {/* Time slots (blocked if booked) */}
               {formData.date && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-slate-800 mb-2">
                     Available Time Slots
                   </label>
-                  <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-                    {slots.map((t) => (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-3 bg-slate-100 rounded-lg border border-slate-200">
+                    {slots.length > 0 ? slots.map((t) => (
                       <button
                         key={t}
                         type="button"
                         onClick={() => setFormData((p) => ({ ...p, time: t }))}
                         disabled={bookedSlots.includes(t)}
-                        className={`p-2 rounded-md border text-sm text-left truncate ${
+                        className={`p-2 rounded-md text-sm font-medium transition-all ${
                           bookedSlots.includes(t)
-                            ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                            ? "bg-slate-200 text-slate-500 cursor-not-allowed line-through"
                             : formData.time === t
-                            ? "bg-blue-600 text-white"
-                            : "hover:bg-blue-100"
+                            ? "bg-blue-600 text-white shadow-md"
+                            : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400"
                         }`}
                       >
                         {t}
                       </button>
-                    ))}
+                    )) : (
+                      <p className="col-span-full text-center text-slate-500 py-2">Select a doctor and date to see slots.</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -623,19 +653,23 @@ export default function Contact() {
                 rows={3}
                 required
                 placeholder="Reason for appointment booking"
-                className="w-full px-4 py-3 border rounded-lg resize-none"
+                className={`${inputClass} resize-none`}
               />
 
               <button
                 type="submit"
                 disabled={isSubmitting || !isVerified}
-                className="w-full bg-blue-600 text-white px-6 py-4 rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
+                className={buttonPrimaryClass}
               >
                 {isSubmitting ? "Booking..." : "Book Appointment"}
               </button>
 
               {status && (
-                <p className="text-center mt-4 font-medium text-gray-700">
+                <p className={`text-center mt-4 p-3 rounded-lg border text-sm font-medium
+                  ${status.includes('✅') ? 'text-green-700 bg-green-50 border-green-300' : ''}
+                  ${status.includes('❌') || status.includes('⚠') || status.includes('Failed') ? 'text-red-700 bg-red-50 border-red-300' : ''}
+                  ${status.includes('...') || status.includes('sent') ? 'text-blue-700 bg-blue-50 border-blue-300' : ''}
+                `}>
                   {status}
                 </p>
               )}
