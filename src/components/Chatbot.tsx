@@ -40,7 +40,7 @@ export default function Chatbot() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // -------------------- GEMINI CONFIG --------------------
-  const GEMINI_API_KEY = "AIzaSyDzrJhfycYhtQInCtSTY6jRc9WrM9FSuuE";
+  const GEMINI_API_KEY = "AIza*******fycYhtQInCt*******************E";
   const GEMINI_MODEL = "gemini-2.5-flash";
 
   // -------------------- SCROLL CONTROL --------------------
