@@ -38,10 +38,12 @@ export default function Chatbot() {
   const [isTyping, setIsTyping] = useState(false);
   const [mode, setMode] = useState<"fast" | "gemini">("fast");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isSending, setIsSending] = useState(false);
 
-  // -------------------- GEMINI CONFIG --------------------
-  const GEMINI_API_KEY = "AIzaSyDzrJhfycYhtQInCtSTY6jRc9WrM9FSuuE";
-  const GEMINI_MODEL = "gemini-2.5-flash";
+  // -------------------- CONFIG (set your render backend URL here) --------------------
+  // Replace with the Render URL you get after deploying the backend
+const BACKEND_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
   // -------------------- SCROLL CONTROL --------------------
   const scrollToBottom = () => {
@@ -49,7 +51,7 @@ export default function Chatbot() {
   };
   useEffect(() => scrollToBottom(), [messages]);
 
-  // ✅ Keep scrollbar space stable, avoid layout shift
+  // Prevent body height issue while chat modal open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflowY = "scroll";
@@ -58,9 +60,35 @@ export default function Chatbot() {
     }
   }, [isOpen]);
 
-  // -------------------- FAST PRESET RESPONSES --------------------
+  // -------------------- ENRICHED FAST PRESET RESPONSES --------------------
   const getFastResponse = (msg: string): string | null => {
-    const text = msg.toLowerCase();
+    const text = msg.toLowerCase().trim();
+
+    // greetings variations
+    const greetings = ["hi", "hello", "helo", "hey", "hiya"];
+    if (greetings.some(g => text === g || text.startsWith(`${g} `))) {
+      return "👋 Hello! I'm Srishakthi Assistant. How can I help you today?";
+    }
+
+    if (text.includes("good morning") || text.includes("gm")) {
+      return "🌅 Good morning! Wishing you a healthy day. How can I assist you?";
+    }
+
+    if (text.includes("good night") || text.includes("gn")) {
+      return "🌙 Good night! Take care — let me know if you want to book an appointment for tomorrow.";
+    }
+
+    if (text.includes("how are you") || text.includes("how r you")) {
+      return "🙂 I'm a virtual assistant — ready to help! How are you today?";
+    }
+
+    if (text === "thank you" || text.includes("thank")) {
+      return "😊 You're welcome! If you need anything else, ask away.";
+    }
+
+    if (text.includes("bye") || text.includes("goodbye") || text.includes("see ya")) {
+      return "👋 Goodbye! If you need anything later, I'll be here.";
+    }
 
     if (text.includes("appointment") || text.includes("book")) {
       return `📅 You can book an appointment here → <a href="#appointment" class="text-blue-700 font-bold underline">Book Appointment</a>`;
@@ -84,7 +112,7 @@ export default function Chatbot() {
       Sunday: <span class="text-red-500 font-semibold">Closed</span>`;
     }
 
-    if (text.includes("doctor") || text.includes("sujith")) {
+    if (text.includes("doctor") || text.includes("sujith") || text.includes("ashwini")) {
       return `👨‍⚕️ <b>Dr. Sujith M S</b> — Physician<br>
       ⏰ 6:00 PM – 9:00 PM<br><br>
       👩‍⚕️ <b>Dr. Ashwini B S</b> — Pediatrician<br>
@@ -101,68 +129,80 @@ export default function Chatbot() {
       • Health Checkups`;
     }
 
-    if (text.includes("hello") || text.includes("hi")) {
-      return "👋 Hello there! How can I help you today?";
+    if (text.includes("open hours") || text.includes("open")) {
+      return `🕒 We're open Monday – Saturday: 9:00 AM – 8:00 PM. Sunday Closed.`;
     }
 
-    if (text.includes("thank")) {
-      return "😊 You're very welcome! Let me know if I can assist further.";
+    // small talk
+    if (text.includes("weather") || text.includes("temp")) {
+      return `🌤 I don't have live weather here, but you can check local weather for Kudlu in any weather app.`;
     }
 
     return null;
   };
 
-  // -------------------- GEMINI Fallback --------------------
+  // -------------------- GEMINI BACKEND CALL (via your Render backend) --------------------
   const getGeminiResponse = async (query: string): Promise<string> => {
     try {
-      const res = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          contents: [{ parts: [{ text: query }] }],
-        }
-      );
-      return (
-        res.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "I'm not sure, but I can help you find out!"
-      );
-    } catch (error) {
-      console.error("Gemini API Error:", error);
+      const res = await axios.post(`${BACKEND_URL.replace(/\/$/, "")}/chat`, { prompt: query }, { timeout: 30000 });
+      // API returns { text } or { raw }
+      const text = res.data?.text || (typeof res.data?.raw === "string" ? res.data.raw : null);
+      return text || "I'm not sure, but I can help you find out!";
+    } catch (error: any) {
+      console.error("Backend error:", error?.response?.data || error?.message);
       return "⚠️ Gemini service unavailable. Try again later or switch to Fast mode.";
     }
   };
 
   // -------------------- SEND MESSAGE --------------------
   const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
+    const trimmed = inputMessage.trim();
+    if (!trimmed) return;
+    if (isSending) return;
 
     const userMsg: Message = {
       id: Date.now(),
-      text: inputMessage,
+      text: trimmed,
       sender: "user",
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, userMsg]);
     setInputMessage("");
     setIsTyping(true);
+    setIsSending(true);
 
     let botReply: string | null = null;
 
-    if (mode === "fast") {
-      botReply = getFastResponse(inputMessage);
-      if (!botReply) botReply = "🤔 Hmm... I couldn’t find that. Try switching to Gemini mode!";
-    } else {
-      botReply = await getGeminiResponse(inputMessage);
+    try {
+      if (mode === "fast") {
+        botReply = getFastResponse(trimmed);
+        if (!botReply) botReply = "🤔 Hmm... I couldn’t find that. Try switching to Gemini mode!";
+      } else {
+        botReply = await getGeminiResponse(trimmed);
+      }
+
+      const botMsg: Message = {
+        id: Date.now() + 1,
+        text: botReply ?? "⚠️ No response available.",
+        sender: "bot",
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, botMsg]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 2,
+          text: "⚠️ Something went wrong. Try again later.",
+          sender: "bot",
+          timestamp: new Date(),
+        },
+      ]);
+    } finally {
+      setIsTyping(false);
+      setIsSending(false);
     }
-
-    const botMsg: Message = {
-      id: Date.now() + 1,
-      text: botReply ?? "⚠️ No response available.",
-      sender: "bot",
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, botMsg]);
-    setIsTyping(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -175,11 +215,10 @@ export default function Chatbot() {
   // -------------------- UI RENDERING --------------------
   return (
     <>
-      {/* Floating Chat Button */}
       {!isOpen && (
         <motion.button
           onClick={() => setIsOpen(true)}
-          whileHover={{ scale: 1.1 }}
+          whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           className="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-xl hover:bg-blue-700 transition-all z-[9999]"
         >
@@ -187,10 +226,8 @@ export default function Chatbot() {
         </motion.button>
       )}
 
-      {/* Chat Window */}
       {isOpen && (
         <div className="fixed bottom-0 right-0 sm:bottom-6 sm:right-6 w-[95%] sm:w-96 h-[85vh] sm:h-[600px] mx-auto bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col border border-gray-200 z-[9999] overflow-hidden">
-          {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-2xl flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white/25 rounded-full flex items-center justify-center">
@@ -208,36 +245,30 @@ export default function Chatbot() {
             </button>
           </div>
 
-          {/* Mode Switch */}
           <div className="flex justify-center gap-3 p-2 bg-blue-50 border-b">
             <button
               onClick={() => setMode("fast")}
-              className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${
-                mode === "fast" ? "bg-blue-600 text-white" : "bg-white text-blue-700"
-              }`}
+              className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${mode === "fast" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`}
             >
               <Zap size={14} /> Fast
             </button>
             <button
               onClick={() => setMode("gemini")}
-              className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${
-                mode === "gemini" ? "bg-blue-600 text-white" : "bg-white text-blue-700"
-              }`}
+              className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${mode === "gemini" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`}
             >
               <Brain size={14} /> Gemini
             </button>
           </div>
 
-          {/* Chat Body */}
           <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50">
             <AnimatePresence>
               {messages.map((m) => (
                 <motion.div
                   key={m.id}
-                  initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                  initial={{ opacity: 0, y: 20, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.25 }}
+                  transition={{ duration: 0.2 }}
                   className={`flex ${m.sender === "user" ? "justify-end" : "justify-start"}`}
                 >
                   {m.sender === "bot" && (
@@ -245,14 +276,7 @@ export default function Chatbot() {
                       <Bot size={18} className="text-white" />
                     </div>
                   )}
-                  <div
-                    className={`max-w-[80%] p-3 rounded-2xl ${
-                      m.sender === "user"
-                        ? "bg-blue-600 text-white rounded-br-none"
-                        : "bg-white text-gray-800 shadow border border-gray-200 rounded-bl-none"
-                    }`}
-                    dangerouslySetInnerHTML={{ __html: m.text }}
-                  />
+                  <div className={`max-w-[80%] p-3 rounded-2xl ${m.sender === "user" ? "bg-blue-600 text-white rounded-br-none" : "bg-white text-gray-800 shadow border border-gray-200 rounded-bl-none"}`} dangerouslySetInnerHTML={{ __html: m.text }} />
                   {m.sender === "user" && (
                     <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center ml-2">
                       <User size={18} className="text-gray-600" />
@@ -277,7 +301,6 @@ export default function Chatbot() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Field */}
           <div className="p-3 border-t bg-white rounded-b-2xl">
             <div className="flex gap-2">
               <input
@@ -287,10 +310,12 @@ export default function Chatbot() {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
+                disabled={isSending}
               />
               <button
                 onClick={handleSendMessage}
-                className="bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 transition"
+                className="bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 transition disabled:opacity-50"
+                disabled={isSending}
               >
                 <Send size={18} />
               </button>
