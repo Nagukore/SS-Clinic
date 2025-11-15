@@ -44,6 +44,11 @@ export default function Chatbot() {
   const GEMINI_API_KEY = "AIzaSyDzrJhfycYhtQInCtSTY6jRc9WrM9FSuuE";
   const GEMINI_MODEL = "gemini-2.5-flash";
 
+  // -------------------- BACKEND URL --------------------
+const BACKEND_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
+
   // -------------------- SCROLL CONTROL --------------------
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -140,18 +145,23 @@ export default function Chatbot() {
     return null;
   };
 
-  // -------------------- GEMINI BACKEND CALL (via your Render backend) --------------------
-  const getGeminiResponse = async (query: string): Promise<string> => {
-    try {
-      const res = await axios.post(`${BACKEND_URL.replace(/\/$/, "")}/chat`, { prompt: query }, { timeout: 30000 });
-      // API returns { text } or { raw }
-      const text = res.data?.text || (typeof res.data?.raw === "string" ? res.data.raw : null);
-      return text || "I'm not sure, but I can help you find out!";
-    } catch (error: any) {
-      console.error("Backend error:", error?.response?.data || error?.message);
-      return "⚠️ Gemini service unavailable. Try again later or switch to Fast mode.";
-    }
-  };
+ // -------------------- GEMINI BACKEND CALL (via your Render backend) --------------------
+const getGeminiResponse = async (query: string): Promise<string> => {
+  try {
+    const cleanUrl = BACKEND_URL.replace(/\/$/, ""); // Remove trailing slash
+    const res = await axios.post(`${cleanUrl}/chat`, { prompt: query }, { timeout: 30000 });
+
+    // API returns { text } or { raw }
+    const text =
+      res.data?.text ||
+      (typeof res.data?.raw === "string" ? res.data.raw : null);
+
+    return text || "I'm not sure, but I can help you find out!";
+  } catch (error: any) {
+    console.error("Backend error:", error?.response?.data || error?.message);
+    return "⚠️ Gemini service unavailable. Try again later or switch to Fast mode.";
+  }
+};
 
   // -------------------- SEND MESSAGE --------------------
   const handleSendMessage = async () => {
