@@ -6,45 +6,44 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-app.use(cors({
-  origin: process.env.ALLOWED_ORIGIN || "*" // restrict to your site in production
-}));
 app.use(express.json());
 
-const GEMINI_MODEL = "gemini-2.5-flash";
-const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
+// ----------------- CORS FIX -----------------
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "https://ssclinickudlu.com"],
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
 
+// ----------------- GEMINI ROUTE -----------------
 app.post("/chat", async (req, res) => {
-  try {
-    const { prompt } = req.body;
-    if (!prompt) return res.status(400).json({ error: "Missing prompt" });
+    try {
+        const { prompt } = req.body;
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return res.status(500).json({ error: "Server missing API key" });
+        const response = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+            {
+                contents: [{
+                    parts: [{ text: prompt }]
+                }]
+            }
+        );
 
-    const url = `${API_BASE}/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+        const text =
+          response.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+          "No response";
 
-    const response = await axios.post(url, {
-      contents: [{ parts: [{ text: prompt }] }]
-    }, {
-      timeout: 30000
-    });
-
-    // send the Gemini text back (simple shape)
-    const candidateText =
-      response.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      null;
-
-    return res.json({ raw: response.data, text: candidateText });
-  } catch (err) {
-    console.error("Backend Gemini Error:", err.response?.data || err.message);
-    // Send limited information to client
-    return res.status(500).json({ error: "Gemini API failed", detail: err.message });
-  }
+        res.json({ text });
+    } catch (err) {
+        console.error("Gemini API error:", err.response?.data || err.message);
+        res.status(500).json({ error: "Backend error" });
+    }
 });
 
-// simple health check
-app.get("/", (req, res) => res.send("SS Clinic backend is running"));
-
-const port = process.env.PORT || 5000;
-app.listen(port, () => console.log(`Backend running on port ${port}`));
+// ----------------- START SERVER -----------------
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log("Backend running on port " + PORT);
+});
