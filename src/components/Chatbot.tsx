@@ -40,10 +40,9 @@ export default function Chatbot() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isSending, setIsSending] = useState(false);
 
-  // -------------------- CONFIG (set your render backend URL here) --------------------
-  // Replace with the Render URL you get after deploying the backend
-const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+  // -------------------- GEMINI CONFIG --------------------
+  const GEMINI_API_KEY = "AIzaSyDzrJhfycYhtQInCtSTY6jRc9WrM9FSuuE";
+  const GEMINI_MODEL = "gemini-2.5-flash";
 
   // -------------------- SCROLL CONTROL --------------------
   const scrollToBottom = () => {
