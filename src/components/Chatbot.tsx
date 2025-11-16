@@ -46,7 +46,7 @@ export default function Chatbot() {
 
   // -------------------- BACKEND URL --------------------
 const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000/";
 
 
   // -------------------- SCROLL CONTROL --------------------
