@@ -9,12 +9,20 @@ const app = express();
 app.use(express.json());
 
 // ------------ CORS FIX ------------
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  "https://ssclinickudlu.com",
-  "https://www.ssclinickudlu.com"
-];
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://ssclinickudlu.com",
+      "https://www.ssclinickudlu.com",
+      "https://ss-clinic-1.onrender.com"
+    ],
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
+
+
 
 app.use(
   cors({
