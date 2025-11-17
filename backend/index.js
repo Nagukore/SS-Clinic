@@ -11,11 +11,16 @@ app.use(express.json());
 // ----------------- CORS FIX -----------------
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://ssclinickudlu.com"],
+    origin: [
+      "http://localhost:5173",
+      "https://ssclinickudlu.com",
+      "https://ss-clinic.onrender.com"
+    ],
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type"],
   })
 );
+
 
 // ----------------- HEALTH ROUTE (IMPORTANT) -----------------
 app.get("/health", (req, res) => {
