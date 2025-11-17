@@ -8,62 +8,55 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// -------------------- CORS FIX --------------------
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",")
-  : [];
+// ------------ CORS FIX ------------
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "https://ssclinickudlu.com",
+  "https://www.ssclinickudlu.com"
+];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // allow SSR, mobile apps
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
       }
-
-      console.log("❌ CORS blocked:", origin);
-      return callback(new Error("Not allowed by CORS: " + origin));
     },
     methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type"],
+    credentials: true,
   })
 );
 
-// -------------------- HEALTH ROUTE --------------------
+// ------------ HEALTH ROUTE ------------
 app.get("/health", (req, res) => {
   res.send("ok");
 });
 
-// -------------------- GEMINI ROUTE --------------------
+// ------------ GEMINI ROUTE ------------
 app.post("/chat", async (req, res) => {
   try {
     const { prompt } = req.body;
 
-    if (!prompt) {
-      return res.status(400).json({ error: "Prompt required" });
-    }
-
     const response = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
-        contents: [{ parts: [{ text: prompt }] }],
+        contents: [{ parts: [{ text: prompt }] }]
       }
     );
 
     const text =
-      response.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "No response";
+      response.data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
 
     res.json({ text });
   } catch (err) {
-    console.error("❌ Gemini API error:", err.response?.data || err.message);
+    console.error("Gemini API error:", err.response?.data || err.message);
     res.status(500).json({ error: "Backend error" });
   }
 });
 
-// -------------------- START SERVER --------------------
+// ------------ START SERVER ------------
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`✅ Backend running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log("Backend running on port " + PORT));
