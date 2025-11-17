@@ -45,8 +45,10 @@ export default function Chatbot() {
   const GEMINI_MODEL = "gemini-2.5-flash";
 
   // -------------------- BACKEND URL --------------------
-const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000/";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+
+
 
 
   // -------------------- SCROLL CONTROL --------------------
