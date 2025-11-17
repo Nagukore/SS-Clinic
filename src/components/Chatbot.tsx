@@ -17,7 +17,7 @@ export default function Chatbot() {
     {
       id: 1,
       text: `
-      👋 <b>Welcome to Srishakthi Clinic!</b><br><br>
+      👋 <b>Welcome to SS Clinic!</b><br><br>
       I can assist you with the following:
       <ul class="list-disc ml-6 mt-2 text-gray-700">
         <li>📅 Booking appointments</li>
@@ -69,9 +69,9 @@ const BACKEND_URL =
     const text = msg.toLowerCase().trim();
 
     // greetings variations
-    const greetings = ["hi", "hello", "helo", "hey", "hiya"];
+    const greetings = ["hi", "hello", "hlo","helo", "hey", "hiya"];
     if (greetings.some(g => text === g || text.startsWith(`${g} `))) {
-      return "👋 Hello! I'm Srishakthi Assistant. How can I help you today?";
+      return "👋 Hello! I'm SS Assistant. How can I help you today?";
     }
 
     if (text.includes("good morning") || text.includes("gm")) {
