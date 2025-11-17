@@ -45,7 +45,9 @@ export default function Chatbot() {
   const GEMINI_MODEL = "gemini-2.5-flash";
 
   // -------------------- BACKEND URL --------------------
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const BACKEND_URL =
+  import.meta.env.VITE_BACKEND_URL || "https://ss-clinic.onrender.com";
+
 
 
 
