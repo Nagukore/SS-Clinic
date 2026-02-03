@@ -188,8 +188,8 @@ export default function Hero() {
                 <p className="text-sm text-gray-600">Happy Patients</p>
               </div>
               <div>
-                <p className="text-3xl font-bold text-blue-600"></p>
-                <p className="text-sm text-gray-600">Emergency Care</p>
+                <p className="text-3xl font-bold text-blue-600">Call For</p>
+                <p className="text-sm text-gray-600">Emergency </p>
               </div>
             </div>
 
