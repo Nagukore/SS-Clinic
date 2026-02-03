@@ -469,7 +469,7 @@ export default function Contact() {
                 lines: [
                   "Mon – Sat: 4:00 PM – 12:00 AM",
                   "Sunday: Closed",
-                  "Emergency: 24/7 Available",
+                  "Emergency:  Available",
                 ],
                 href: null,
               },

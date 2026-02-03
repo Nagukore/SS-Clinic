@@ -188,7 +188,7 @@ export default function Hero() {
                 <p className="text-sm text-gray-600">Happy Patients</p>
               </div>
               <div>
-                <p className="text-3xl font-bold text-blue-600">24/7</p>
+                <p className="text-3xl font-bold text-blue-600"></p>
                 <p className="text-sm text-gray-600">Emergency Care</p>
               </div>
             </div>
@@ -200,7 +200,7 @@ export default function Hero() {
                   <Heart className="text-green-600 fill-current" size={24} />
                 </div>
                 <div>
-                  <p className="font-bold text-gray-900">Available 24/7</p>
+                  <p className="font-bold text-gray-900">Available </p>
                   <p className="text-sm text-gray-600">Emergency Services</p>
                 </div>
               </div>

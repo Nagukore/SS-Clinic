@@ -18,7 +18,7 @@ export default function About() {
       icon: Clock,
       title: 'Quick Response Time',
       description:
-        '24/7 emergency services with rapid response and efficient care delivery',
+        'Emergency services with rapid response and efficient care delivery',
     },
     {
       icon: Shield,

@@ -82,7 +82,7 @@ export default function Footer() {
             <ul className="text-gray-400 space-y-2 text-sm">
               <li>Mon – Sat: 4:00 PM – 12:00 AM</li>
               <li>Sunday: Closed</li>
-              <li className="pt-2 text-blue-400 font-medium">Emergency: 24/7 Available</li>
+             <li className="pt-2 text-blue-400 font-medium">Emergency: Call clinic for guidance</li>
             </ul>
           </div>
 
