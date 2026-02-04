@@ -1,4 +1,5 @@
-# 🏥 **SS Clinic – Smart Appointment Booking System**
+# 🏥 SS Clinic — Full-Stack Smart Appointment Booking Platform
+
 
 A modern, secure, and real-time appointment booking platform for **SS Clinic** that enables patients to verify their email via OTP, view available time slots, and receive automated confirmation emails — all backed by Firebase Firestore.
 
