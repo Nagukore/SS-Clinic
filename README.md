@@ -264,11 +264,13 @@ git push origin main
 
 **Nagesh**  
 Frontend Developer | AI/ML Enthusiast  
+AMC College  
 
-📧 Email: nages.amcec@gmail.com  
-🔗 LinkedIn: https://www.linkedin.com/in/nageshkore
+📧 Email: **nages.amcec@gmail.com**
 
----
+🔗 LinkedIn:  
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Nagesh_Kore-0A66C2?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/nageshkore)
+
 
 ## 📜 License
 
