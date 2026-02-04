@@ -8,10 +8,8 @@ A modern, secure, and real-time appointment booking platform for **SS Clinic** t
 
 | Environment | URL |
 |-------------|-----|
-| Production  | https://your-domain.com |
-| Vercel Preview | https://your-vercel-project.vercel.app |
-
-> Replace with your actual deployed links.
+| Production  | https://ssclinickudlu.com |
+| Vercel Preview | https://ssclinic.vercel.app |
 
 ---
 
@@ -266,9 +264,9 @@ git push origin main
 
 **Nagesh**
 Frontend Developer | AI/ML Enthusiast
-AMC College
 
-📧 Email: [your-email@example.com](mailto:your-email@example.com)
+
+📧 Email: [your-email@example.](mailto:your-email@example.com)
 🔗 LinkedIn: [https://linkedin.com/in/your-profile](https://linkedin.com/in/your-profile)
 
 ---
@@ -277,14 +275,6 @@ AMC College
 
 This project is licensed under the **MIT License**.
 
----
-
-## 🤝 Contributions
-
-Contributions, issues, and feature requests are welcome!
-Feel free to open a pull request.
-
----
 
 ## ⭐ Acknowledgments
 
@@ -293,12 +283,4 @@ Feel free to open a pull request.
 * Vercel
 * Hostinger
 
-```
-
----
-
-If you want, I can now:
-- add **GitHub badges** (Vercel, React, Firebase, License),  
-- replace placeholders with your **real domain / repo link**, or  
-- tailor this README for your **college project report or resume.**
 ```
