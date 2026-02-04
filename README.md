@@ -60,42 +60,45 @@
 
 ---
 
-## 🧠 System Architecture
-SS CLINIC/
+## 📁 Project Structure (ASCII Tree — Annotated)
+
+SS CLINIC
+│
+├── node_modules/ # Root dependencies
 │
 ├── project/
+│ │
 │ ├── bolt/ # UI/Design related assets (if used)
 │ │
-│ ├── backend/ # Node.js Backend
-│ │ ├── node_modules/
-│ │ ├── .env # Backend environment variables
-│ │ ├── .env.example
-│ │ ├── index.js # Main backend server
-│ │ ├── package-lock.json
-│ │ └── package.json
+│ └── backend/ # Node.js Backend
+│ ├── node_modules/
+│ ├── .env # Backend environment variables
+│ ├── .env.example
+│ ├── index.js # Main server file
+│ ├── package-lock.json
+│ └── package.json
 │
 ├── public/ # Static assets
 │
 ├── src/ # React Frontend
-│ ├── components/
-│ │ ├── About.tsx # About section UI
-│ │ ├── AdminLayout.tsx # Admin panel layout
-│ │ ├── AppointmentList.tsx # View booked appointments
-│ │ ├── AppointmentScheduler.tsx
-│ │ ├── Chatbot.tsx # AI chatbot UI
-│ │ ├── ChatbotGemini.tsx # Gemini-based chatbot
-│ │ ├── Contact.tsx # Booking form + OTP + Firestore
-│ │ ├── DashboardPage.tsx # Admin dashboard
-│ │ ├── Doctors.tsx # Doctors listing
-│ │ ├── Footer.tsx # Site footer
-│ │ ├── Hero.tsx # Landing hero section
-│ │ ├── HomePage.tsx # Main homepage
-│ │ ├── LoginPage.tsx # Admin login
-│ │ ├── Navbar.tsx # Navigation bar
-│ │ └── ProtectedRoute.tsx # Route protection
+│ └── components/
+│ ├── About.tsx # About section
+│ ├── AdminLayout.tsx # Admin panel layout
+│ ├── AppointmentList.tsx # List of appointments
+│ ├── AppointmentScheduler.tsx
+│ ├── Chatbot.tsx # AI chatbot UI
+│ ├── ChatbotGemini.tsx # Gemini-based chatbot
+│ ├── Contact.tsx # Booking + OTP + Firestore
+│ ├── DashboardPage.tsx # Admin dashboard
+│ ├── Doctors.tsx # Doctors list
+│ ├── Footer.tsx # Site footer
+│ ├── Hero.tsx # Landing hero section
+│ ├── HomePage.tsx # Main homepage
+│ ├── LoginPage.tsx # Admin login
+│ ├── Navbar.tsx # Navigation bar
+│ └── ProtectedRoute.tsx # Route protection
 │
-└── OUTLINE # Project outline / notes
-
+└── OUTLINE # Project notes / outline
 
 ---
 
