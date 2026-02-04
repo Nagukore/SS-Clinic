@@ -74,21 +74,20 @@ Create a `.env` file in the project root. For production, add these to your Verc
 # ======= FRONTEND (VITE) =======
 VITE_BACKEND_URL=[https://ss-clinic-1.onrender.com](https://ss-clinic-1.onrender.com)
 
-# EmailJS Configuration
-VITE_EMAILJS_SERVICE_ID=service_lryd73h
-VITE_EMAILJS_OTP_TEMPLATE_ID=template_ohmoncy
-VITE_EMAILJS_APPT_TEMPLATE_ID=template_r26t8ov
-VITE_EMAILJS_PUBLIC_KEY=MGrfNH-8tMwQkb0fp
+# ======= FRONTEND (VITE) =======
+VITE_BACKEND_URL=https://ss-clinic-1.onrender.com
 
-# Firebase Configuration
-VITE_FIREBASE_API_KEY=AIzaSyArLWKJJAX6F5yKxbz8QV4oLNcH3wLfSUg
-VITE_FIREBASE_AUTH_DOMAIN=ss-clinic-e07db.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=ss-clinic-e07db
-VITE_FIREBASE_STORAGE_BUCKET=ss-clinic-e07db.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=429785345061
-VITE_FIREBASE_APP_ID=1:429785345061:web:6abe3ae9ebef6ccf7563cc
-VITE_FIREBASE_MEASUREMENT_ID=G-HMCQ62G56K
+# EmailJS Configuration (Use placeholders)
+VITE_EMAILJS_SERVICE_ID=your_service_id
+VITE_EMAILJS_OTP_TEMPLATE_ID=your_otp_template_id
+VITE_EMAILJS_APPT_TEMPLATE_ID=your_appt_template_id
+VITE_EMAILJS_PUBLIC_KEY=your_public_key
 
-# ======= BACKEND (RENDER/SERVER) =======
-GEMINI_API_KEY=your_gemini_key_here
-PORT=5000
+# Firebase Configuration (Use placeholders)
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
