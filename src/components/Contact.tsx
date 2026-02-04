@@ -12,12 +12,17 @@ import {
 import emailjs from "@emailjs/browser";
 
 /**
- * EmailJS config
+ * EmailJS config (from Vite env vars)
  */
-const SERVICE_ID = "service_lryd73h";
-const OTP_TEMPLATE_ID = "template_ohmoncy"; // Template to send OTP
-const APPT_TEMPLATE_ID = "template_r26t8ov"; // Template for appointment confirmation
-const EMAILJS_PUBLIC_KEY = "MGrfNH-8tMwQkb0fp";
+const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID as string;
+const OTP_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_OTP_TEMPLATE_ID as string; // Template to send OTP
+const APPT_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_APPT_TEMPLATE_ID as string; // Template for appointment confirmation
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY as string;
+
+// Development-time safety checks — warn if EmailJS env vars are missing
+if (!SERVICE_ID || !OTP_TEMPLATE_ID || !APPT_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) {
+  console.warn("EmailJS environment variables are not fully configured.\nPlease add VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_OTP_TEMPLATE_ID, VITE_EMAILJS_APPT_TEMPLATE_ID and VITE_EMAILJS_PUBLIC_KEY to your .env.local or .env file (see .env.example).\nBooking and OTP email functionality will not work without them.");
+}
 
 type FormData = {
   fullName: string;
@@ -304,6 +309,8 @@ export default function Contact() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    console.log("Booking attempt", { isVerified, formData });
+
     if (!isVerified) {
       setStatus("Please verify your email with the OTP before booking.");
       return;
@@ -314,10 +321,9 @@ export default function Contact() {
       !formData.email ||
       !formData.doctor ||
       !formData.date ||
-      !formData.time ||
-      !formData.message
+      !formData.time
     ) {
-      setStatus("Please fill all required fields.");
+      setStatus("Please fill all required fields (Name, Email, Doctor, Date, Time).");
       return;
     }
 
@@ -333,6 +339,7 @@ export default function Contact() {
         where("time", "==", formData.time)
       );
       const existing = await getDocs(q);
+      console.log("Existing check", existing.size);
       if (!existing.empty) {
         setStatus("⚠ This time slot was just booked. Please choose another.");
         setIsSubmitting(false);
@@ -346,6 +353,7 @@ export default function Contact() {
         formData.fullName,
         formData.phone
       );
+      console.log("Patient ID:", patientId);
 
       // Create appointment ID (e.g., "SS01", "SS02")
       const snapshot = await getDocs(collection(db, "appointments"));
@@ -353,13 +361,14 @@ export default function Contact() {
       const appointmentId = `SS${String(total + 1).padStart(2, "0")}`;
 
       // Save appointment to Firestore
-      await addDoc(collection(db, "appointments"), {
+      const docRef = await addDoc(collection(db, "appointments"), {
         appointmentId,
         patientId,
         ...formData,
         createdAt: serverTimestamp(),
         status: "booked", // Default status
       });
+      console.log("Appointment added, docRef id:", (docRef as any).id);
 
       // Send confirmation email
       const templateParams = {
@@ -379,11 +388,11 @@ export default function Contact() {
           templateParams,
           EMAILJS_PUBLIC_KEY
         );
-      } catch (err) {
+      } catch (err: any) {
         console.warn("EmailJS confirmation error:", err);
         // Don't fail the whole booking if email fails
         setStatus(
-          `✅ Appt ${appointmentId} booked! (But confirmation email failed to send)`
+          `✅ Appt ${appointmentId} booked! (But confirmation email failed to send: ${err?.message || 'unknown error'})`
         );
         setIsSubmitting(false); // Manually set here
         return; // Exit
@@ -404,9 +413,9 @@ export default function Contact() {
       });
       setBookedSlots([]);
       setIsVerified(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Booking error:", err);
-      setStatus("❌ Booking failed. Try again later.");
+      setStatus(`❌ Booking failed: ${err?.message || 'Try again later.'}`);
     } finally {
       // Only set if not already set by email error
       if (isSubmitting) {
@@ -651,15 +660,15 @@ export default function Contact() {
                 value={formData.message}
                 onChange={handleChange}
                 rows={3}
-                required
-                placeholder="Reason for appointment booking"
+                placeholder="Reason for appointment booking (optional)"
                 className={`${inputClass} resize-none`}
               />
 
               <button
                 type="submit"
-                disabled={isSubmitting || !isVerified}
+                disabled={isSubmitting || !isVerified || !formData.fullName || !formData.email || !formData.doctor || !formData.date || !formData.time}
                 className={buttonPrimaryClass}
+                title={!isVerified ? 'Verify your email using OTP to enable booking' : (!formData.fullName || !formData.email || !formData.doctor || !formData.date || !formData.time) ? 'Fill all required fields to book' : undefined}
               >
                 {isSubmitting ? "Booking..." : "Book Appointment"}
               </button>

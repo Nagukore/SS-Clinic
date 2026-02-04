@@ -54,19 +54,15 @@ export default function ChatbotGemini() {
     setIsTyping(true);
 
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://ss-clinic.onrender.com';
+      const cleanUrl = backendUrl.replace(/\/$/, '');
 
-      const response = await fetch(`${supabaseUrl}/functions/v1/gemini-chat`, {
+      const response = await fetch(`${cleanUrl}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseAnonKey}`,
         },
-        body: JSON.stringify({
-          message: inputMessage,
-          conversationHistory: getConversationHistory()
-        })
+        body: JSON.stringify({ prompt: inputMessage })
       });
 
       if (!response.ok) {
@@ -77,7 +73,7 @@ export default function ChatbotGemini() {
 
       const botResponse: Message = {
         id: messages.length + 2,
-        text: data.response || "I apologize, but I couldn't generate a response. Please try again.",
+        text: data.response || data.text || "I apologize, but I couldn't generate a response. Please try again.",
         sender: 'bot',
         timestamp: new Date()
       };

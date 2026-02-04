@@ -40,9 +40,9 @@ export default function Chatbot() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isSending, setIsSending] = useState(false);
 
-  // -------------------- GEMINI CONFIG --------------------
-  const GEMINI_API_KEY = "AIzaSyDzrJhfycYhtQInCtSTY6jRc9WrM9FSuuE";
-  const GEMINI_MODEL = "gemini-2.5-flash";
+  // -------------------- GEMINI CONFIG (backend proxy only) --------------------
+  // Gemini API key is intentionally kept on the server. Frontend should call the backend proxy
+  // via `VITE_BACKEND_URL` (see `BACKEND_URL` above) instead of embedding credentials here.
 
   // -------------------- BACKEND URL --------------------
 const BACKEND_URL =
