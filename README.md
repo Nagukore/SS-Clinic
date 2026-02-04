@@ -281,8 +281,7 @@ This project is licensed under the **MIT License**.
 
 ## 🤝 Contributions
 
-Contributions, issues, and feature requests are welcome!  
-Feel free to open a pull request.
+Contributions, issues, and feature requests are welcome!
 
 ---
 
