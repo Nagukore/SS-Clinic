@@ -262,12 +262,12 @@ git push origin main
 
 ## 👨‍💻 Developed By
 
-**Nagesh**
-Frontend Developer | AI/ML Enthusiast
+**Nagesh**  
+Frontend Developer | AI/ML Enthusiast  
+AMC College  
 
-
-📧 Email: [your-email@example.](mailto:your-email@example.com)
-🔗 LinkedIn: [https://linkedin.com/in/your-profile](https://linkedin.com/in/your-profile)
+📧 Email: nages.amcec@gmail.com  
+🔗 LinkedIn: https://www.linkedin.com/in/nageshkore
 
 ---
 
@@ -275,12 +275,18 @@ Frontend Developer | AI/ML Enthusiast
 
 This project is licensed under the **MIT License**.
 
+---
+
+## 🤝 Contributions
+
+Contributions, issues, and feature requests are welcome!  
+Feel free to open a pull request.
+
+---
 
 ## ⭐ Acknowledgments
 
-* Firebase Firestore
-* EmailJS
-* Vercel
-* Hostinger
-
-```
+- Firebase Firestore  
+- EmailJS  
+- Vercel  
+- Hostinger  
