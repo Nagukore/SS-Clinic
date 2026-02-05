@@ -264,8 +264,7 @@ git push origin main
 ## 👨‍💻 Developed By
 
 **Nagesh**  
-Frontend Developer | AI/ML Enthusiast  
-AMC College  
+Frontend Developer | AI/ML Enthusiast    
 
 📧 Email: **nagesh.amcec@gmail.com**  
 🔗 LinkedIn:  
