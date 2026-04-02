@@ -70,7 +70,7 @@ export default function Contact() {
   // When doctor/date changes, generate slots + fetch booked slots
   useEffect(() => {
     if (formData.doctor && formData.date) {
-      const generatedSlots = generateDoctorSlots(formData.doctor);
+      const generatedSlots = generateDoctorSlots(formData.doctor, formData.date);
       setSlots(generatedSlots);
       fetchBookedSlots(formData.doctor, formData.date);
       // Reset chosen time when doctor/date change
@@ -113,23 +113,32 @@ export default function Contact() {
   }, [status]);
 
   // --- Helper: doctor-specific slots (15-min interval) ---
-  const generateDoctorSlots = (doctor: string) => {
+  const generateDoctorSlots = (doctor: string, selectedDate: string) => {
     if (doctor === "Dr. Ashwini B S") {
-      return generateSlots("17:45", "19:45", 15); // 5:45 PM to 7:45 PM
+      return generateSlots("17:45", "19:45", 15, selectedDate); // 5:45 PM to 7:45 PM
     } else if (doctor === "Dr. Sujith M S") {
-      return generateSlots("18:00", "21:00", 15); // 6:00 PM to 9:00 PM
+      return generateSlots("18:00", "21:00", 15, selectedDate); // 6:00 PM to 9:00 PM
     }
-    return generateSlots("09:00", "20:00", 15); // Default fallback
+    return generateSlots("09:00", "20:00", 15, selectedDate); // Default fallback
   };
 
   // --- Generate slots (24h strings -> formatted to 12h with AM/PM) ---
-  const generateSlots = (start: string, end: string, interval: number) => {
+  const generateSlots = (start: string, end: string, interval: number, selectedDate: string) => {
     const result: string[] = [];
     let [h, m] = start.split(":").map(Number);
     const [eh, em] = end.split(":").map(Number);
 
+    const d = new Date();
+    const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const isToday = selectedDate === todayStr;
+    const currentMins = d.getHours() * 60 + d.getMinutes();
+
     while (h < eh || (h === eh && m < em)) {
-      result.push(formatTo12Hour(h, m));
+      const slotMins = h * 60 + m;
+      // Skip past slots for today
+      if (!isToday || slotMins > currentMins) {
+        result.push(formatTo12Hour(h, m));
+      }
       m += interval;
       if (m >= 60) {
         h++;
@@ -425,11 +434,23 @@ export default function Contact() {
   };
 
   // --- STYLING ---
-  const today = new Date().toISOString().split("T")[0];
+  const getLocalTodayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const todayDateStr = getLocalTodayStr();
 
-  // Tailwind classes for form inputs
-  const inputClass =
-    "w-full px-4 py-3 rounded-lg bg-white border border-slate-300 text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow";
+  const floatingInputClass =
+    "block w-full px-4 py-3.5 bg-transparent rounded-lg border border-slate-300 text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 peer transition-shadow disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none";
+
+  const floatingLabelClass =
+    "absolute text-slate-500 duration-300 transform -translate-y-1/2 scale-75 top-0 z-10 origin-[0] left-3 px-1 bg-white peer-placeholder-shown:bg-transparent peer-focus:bg-white peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-0 peer-focus:scale-75 peer-focus:-translate-y-1/2 cursor-text pointer-events-none";
+
+  const floatingTextareaLabelClass =
+    "absolute text-slate-500 duration-300 transform -translate-y-1/2 scale-75 top-0 z-10 origin-[0] left-3 px-1 bg-white peer-placeholder-shown:bg-transparent peer-focus:bg-white peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:top-3.5 peer-focus:top-0 peer-focus:scale-75 peer-focus:-translate-y-1/2 cursor-text pointer-events-none";
+
+  const alwaysFloatedLabelClass =
+    "absolute text-slate-500 duration-300 transform -translate-y-1/2 scale-75 top-0 z-10 origin-[0] left-3 px-1 bg-white pointer-events-none peer-focus:text-blue-600";
 
   const buttonPrimaryClass =
     "w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed";
@@ -527,36 +548,56 @@ export default function Contact() {
             <form onSubmit={handleSubmit} className="space-y-5">
               
               <div className="grid sm:grid-cols-2 gap-5">
-                <input
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  required
-                  placeholder="Full Name"
-                  className={inputClass}
-                />
-                <input
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  required
-                  placeholder="Phone Number"
-                  className={inputClass}
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="fullName"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    required
+                    placeholder=" "
+                    className={floatingInputClass}
+                  />
+                  <label htmlFor="fullName" className={floatingLabelClass}>
+                    Full Name
+                  </label>
+                </div>
+                <div className="relative">
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    required
+                    placeholder=" "
+                    className={floatingInputClass}
+                  />
+                  <label htmlFor="phone" className={floatingLabelClass}>
+                    Phone Number
+                  </label>
+                </div>
               </div>
 
               {/* Email + OTP column */}
               <div className="flex flex-col sm:flex-row gap-3">
-                <input
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  placeholder="Email address"
-                  className={`${inputClass} flex-1`}
-                  disabled={isVerified}
-                />
+                <div className="relative flex-1">
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    placeholder=" "
+                    className={floatingInputClass}
+                    disabled={isVerified}
+                  />
+                  <label htmlFor="email" className={floatingLabelClass}>
+                    Email address
+                  </label>
+                </div>
 
                 {/* Send OTP button */}
                 <button
@@ -577,12 +618,19 @@ export default function Contact() {
               {otpSent && (
                 <div className="bg-slate-50 p-4 rounded-lg space-y-3 border border-slate-200">
                   <div className="flex flex-col sm:flex-row items-center gap-3">
-                    <input
-                      value={otpValue}
-                      onChange={(e) => setOtpValue(e.target.value)}
-                      placeholder="Enter 6-digit code"
-                      className={`${inputClass} flex-1`}
-                    />
+                    <div className="relative flex-1 w-full">
+                      <input
+                        type="text"
+                        id="otpValue"
+                        value={otpValue}
+                        onChange={(e) => setOtpValue(e.target.value)}
+                        placeholder=" "
+                        className={floatingInputClass}
+                      />
+                      <label htmlFor="otpValue" className={floatingLabelClass}>
+                        Enter 6-digit code
+                      </label>
+                    </div>
                     <button
                       type="button"
                       onClick={handleVerifyOtp}
@@ -600,29 +648,39 @@ export default function Contact() {
               )}
 
               <div className="grid sm:grid-cols-2 gap-5">
-                <select
-                  name="doctor"
-                  value={formData.doctor}
-                  onChange={handleChange}
-                  required
-                  className={inputClass}
-                >
-                  <option value="">-- Select Doctor --</option>
-                  <option value="Dr. Sujith M S">Dr. Sujith M S - Physician</option>
-                  <option value="Dr. Ashwini B S">
-                    Dr. Ashwini B S - Pediatrician
-                  </option>
-                </select>
+                <div className="relative">
+                  <select
+                    id="doctor"
+                    name="doctor"
+                    value={formData.doctor}
+                    onChange={handleChange}
+                    required
+                    className={floatingInputClass}
+                  >
+                    <option value="" disabled hidden>-- Select Doctor --</option>
+                    <option value="Dr. Sujith M S">Dr. Sujith M S - Physician</option>
+                    <option value="Dr. Ashwini B S">Dr. Ashwini B S - Pediatrician</option>
+                  </select>
+                  <label htmlFor="doctor" className={alwaysFloatedLabelClass}>
+                    Doctor
+                  </label>
+                </div>
 
-                <input
-                  type="date"
-                  name="date"
-                  value={formData.date}
-                  onChange={handleChange}
-                  required
-                  min={today}
-                  className={inputClass}
-                />
+                <div className="relative">
+                  <input
+                    type="date"
+                    id="date"
+                    name="date"
+                    value={formData.date}
+                    onChange={handleChange}
+                    required
+                    min={todayDateStr}
+                    className={floatingInputClass}
+                  />
+                  <label htmlFor="date" className={alwaysFloatedLabelClass}>
+                    Appointment Date
+                  </label>
+                </div>
               </div>
 
               {/* Time slots (blocked if booked) */}
@@ -649,20 +707,28 @@ export default function Contact() {
                         {t}
                       </button>
                     )) : (
-                      <p className="col-span-full text-center text-slate-500 py-2">Select a doctor and date to see slots.</p>
+                      <p className="col-span-full text-center text-slate-500 py-2">
+                        {formData.doctor && formData.date ? "No slots available for this date." : "Select a doctor and date to see slots."}
+                      </p>
                     )}
                   </div>
                 </div>
               )}
 
-              <textarea
-                name="message"
-                value={formData.message}
-                onChange={handleChange}
-                rows={3}
-                placeholder="Reason for appointment booking (optional)"
-                className={`${inputClass} resize-none`}
-              />
+              <div className="relative">
+                <textarea
+                  id="message"
+                  name="message"
+                  value={formData.message}
+                  onChange={handleChange}
+                  rows={3}
+                  placeholder=" "
+                  className={`${floatingInputClass} resize-none`}
+                />
+                <label htmlFor="message" className={floatingTextareaLabelClass}>
+                  Reason for appointment booking (optional)
+                </label>
+              </div>
 
               <button
                 type="submit"
