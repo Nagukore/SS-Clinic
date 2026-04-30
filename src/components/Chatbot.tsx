@@ -45,8 +45,8 @@ export default function Chatbot() {
   // via `VITE_BACKEND_URL` (see `BACKEND_URL` above) instead of embedding credentials here.
 
   // -------------------- BACKEND URL --------------------
-const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL || "https://ss-clinic.onrender.com";
+  const BACKEND_URL =
+    import.meta.env.VITE_BACKEND_URL || "https://ss-clinic.onrender.com";
 
 
 
@@ -73,7 +73,7 @@ const BACKEND_URL =
     const text = msg.toLowerCase().trim();
 
     // greetings variations
-    const greetings = ["hi", "hello", "hlo","helo", "hey", "hiya"];
+    const greetings = ["hi", "hello", "hlo", "helo", "hey", "hiya"];
     if (greetings.some(g => text === g || text.startsWith(`${g} `))) {
       return "👋 Hello! I'm SS Assistant. How can I help you today?";
     }
@@ -149,23 +149,23 @@ const BACKEND_URL =
     return null;
   };
 
- // -------------------- GEMINI BACKEND CALL (via your Render backend) --------------------
-const getGeminiResponse = async (query: string): Promise<string> => {
-  try {
-    const cleanUrl = BACKEND_URL.replace(/\/$/, ""); // Remove trailing slash
-    const res = await axios.post(`${cleanUrl}/chat`, { prompt: query }, { timeout: 30000 });
+  // -------------------- GEMINI BACKEND CALL (via your Render backend) --------------------
+  const getGeminiResponse = async (query: string): Promise<string> => {
+    try {
+      const cleanUrl = BACKEND_URL.replace(/\/$/, ""); // Remove trailing slash
+      const res = await axios.post(`${cleanUrl}/chat`, { prompt: query }, { timeout: 30000 });
 
-    // API returns { text } or { raw }
-    const text =
-      res.data?.text ||
-      (typeof res.data?.raw === "string" ? res.data.raw : null);
+      // API returns { text } or { raw }
+      const text =
+        res.data?.text ||
+        (typeof res.data?.raw === "string" ? res.data.raw : null);
 
-    return text || "I'm not sure, but I can help you find out!";
-  } catch (error: any) {
-    console.error("Backend error:", error?.response?.data || error?.message);
-    return "⚠️ Gemini service unavailable. Try again later or switch to Fast mode.";
-  }
-};
+      return text || "I'm not sure, but I can help you find out!";
+    } catch (error: any) {
+      console.error("Backend error:", error?.response?.data || error?.message);
+      return "⚠️ Gemini service unavailable. Try again later or switch to Fast mode.";
+    }
+  };
 
   // -------------------- SEND MESSAGE --------------------
   const handleSendMessage = async () => {
