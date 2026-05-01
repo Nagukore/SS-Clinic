@@ -11,6 +11,8 @@ import App from './App'; // <-- We import App from App.tsx
 import LoginPage from './components/LoginPage';
 import DashboardPage from './components/DashboardPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import BlogListPage from './components/BlogListPage';
+import BlogPostPage from './components/BlogPostPage';
 
 const router = createBrowserRouter([
   {
@@ -32,6 +34,14 @@ const router = createBrowserRouter([
             <DashboardPage />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: 'blogs',
+        element: <BlogListPage />,
+      },
+      {
+        path: 'blogs/:slug',
+        element: <BlogPostPage />,
       },
     ],
   },

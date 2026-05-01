@@ -6,6 +6,7 @@ import Doctors from './components/Doctors';
 import Services from './components/Services';
 import Contact from './components/Contact';
 import Chatbot from './components/Chatbot';
+import LatestBlogs from './components/LatestBlogs';
 
 // Notice there is NO Navbar here!
 export default function HomePage() {
@@ -15,6 +16,7 @@ export default function HomePage() {
       <About />
       <Doctors />
       <Services />
+      <LatestBlogs />
       <Contact />
       <Chatbot />
     </>

@@ -7,7 +7,10 @@ import {
   CalendarSearch,
   LogOut,
   UserCircle,
+  FileText,
 } from "lucide-react";
+import AdminBlogList, { Blog } from "./admin/AdminBlogList";
+import AdminBlogForm from "./admin/AdminBlogForm";
 
 import {
   collection,
@@ -33,9 +36,15 @@ export default function DashboardPage() {
   // ---- KPIs (cards) ----
   const [todayAppointments, setTodayAppointments] = useState<number>(0);
   const [activePatients, setActivePatients] = useState<number>(0);
+  const [totalBlogs, setTotalBlogs] = useState<number>(0);
   const [systemStatus, setSystemStatus] = useState<"Active" | "Offline">(
     "Active"
   );
+  
+  // Tabs State
+  const [activeTab, setActiveTab] = useState<"appointments" | "blogs">("appointments");
+  const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
+  const [isCreatingBlog, setIsCreatingBlog] = useState(false);
 
   // Compute today's date string in the same format your form saves
   const todayStr = useMemo(() => {
@@ -98,6 +107,24 @@ export default function DashboardPage() {
     }
   }, [db]);
 
+  // ---- Realtime: Total blogs ----
+  useEffect(() => {
+    try {
+      const unsub = onSnapshot(
+        collection(db, "blogs"),
+        (snap) => {
+          setTotalBlogs(snap.size);
+        },
+        (err) => {
+          console.error("Realtime blogs error:", err);
+        }
+      );
+      return () => unsub();
+    } catch (e) {
+      console.error(e);
+    }
+  }, [db]);
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -132,7 +159,7 @@ export default function DashboardPage() {
       {/* Main */}
       <main className="max-w-7xl mx-auto w-full px-6 py-8">
         {/* KPI Cards */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {/* Today's Appointments */}
           <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 flex gap-4 items-center">
             <div className="w-14 h-14 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center">
@@ -175,20 +202,82 @@ export default function DashboardPage() {
               </h3>
             </div>
           </div>
+
+          {/* Total Blogs */}
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 flex gap-4 items-center">
+            <div className="w-14 h-14 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center">
+              <FileText size={28} />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Total Blogs</p>
+              <h3 className="text-2xl font-bold text-gray-800">
+                {totalBlogs}
+              </h3>
+            </div>
+          </div>
         </div>
 
-        {/* Appointment List */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-3 flex items-center gap-2">
-            <CalendarSearch size={26} className="text-blue-600" />
-            Appointment Requests
-          </h2>
-          <p className="text-gray-600 mb-6">
-            View and manage patient appointment bookings.
-          </p>
-          <hr className="mb-6" />
-          <AppointmentList />
+        {/* Tabs */}
+        <div className="flex gap-4 border-b border-gray-200 mb-8">
+          <button
+            onClick={() => setActiveTab("appointments")}
+            className={`pb-3 px-2 font-medium text-lg border-b-2 transition-colors ${
+              activeTab === "appointments" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-800"
+            }`}
+          >
+            <div className="flex items-center gap-2"><CalendarSearch size={20} /> Appointments</div>
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab("blogs");
+              setIsCreatingBlog(false);
+              setEditingBlog(null);
+            }}
+            className={`pb-3 px-2 font-medium text-lg border-b-2 transition-colors ${
+              activeTab === "blogs" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-800"
+            }`}
+          >
+            <div className="flex items-center gap-2"><FileText size={20} /> Blogs</div>
+          </button>
         </div>
+
+        {/* Content Area */}
+        {activeTab === "appointments" && (
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <CalendarSearch size={26} className="text-blue-600" />
+              Appointment Requests
+            </h2>
+            <p className="text-gray-600 mb-6">
+              View and manage patient appointment bookings.
+            </p>
+            <hr className="mb-6" />
+            <AppointmentList />
+          </div>
+        )}
+
+        {activeTab === "blogs" && (
+          <div>
+            {isCreatingBlog || editingBlog ? (
+              <AdminBlogForm 
+                blog={editingBlog}
+                onBack={() => {
+                  setIsCreatingBlog(false);
+                  setEditingBlog(null);
+                }}
+                onSuccess={() => {
+                  setIsCreatingBlog(false);
+                  setEditingBlog(null);
+                }}
+              />
+            ) : (
+              <AdminBlogList 
+                onCreate={() => setIsCreatingBlog(true)}
+                onEdit={(blog) => setEditingBlog(blog)}
+              />
+            )}
+          </div>
+        )}
       </main>
     </div>
   );

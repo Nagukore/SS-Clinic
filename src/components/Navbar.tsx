@@ -95,6 +95,16 @@ export default function Navbar() {
           <NavLink href="#services" id="services" onClick={handleSectionScroll}>
             Services
           </NavLink>
+          <Link
+            to="/blogs"
+            className="font-medium relative group text-gray-700 hover:text-blue-600 transition-colors duration-500"
+          >
+            Blogs
+            <span
+              className="absolute bottom-[-4px] left-0 h-[2px] w-0 group-hover:w-full
+                transition-all duration-500 ease-out bg-blue-600"
+            ></span>
+          </Link>
           <NavLink href="#contact" id="contact" onClick={handleSectionScroll}>
             Contact
           </NavLink>
@@ -200,6 +210,13 @@ export default function Navbar() {
           >
             Services
           </a>
+          <Link
+            to="/blogs"
+            onClick={() => setIsOpen(false)}
+            className="w-full text-center py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 font-medium transition-colors duration-500"
+          >
+            Blogs
+          </Link>
           <a
             href="#contact"
             onClick={(e) => handleSectionScroll(e, 'contact')}

@@ -19,3 +19,7 @@ const app = initializeApp(firebaseConfig);
 // Initialize Cloud Firestore and export it
 // This is what you'll use in your components to interact with the database
 export const db = getFirestore(app);
+
+// Initialize Cloud Storage and export it
+import { getStorage } from "firebase/storage";
+export const storage = getStorage(app);
