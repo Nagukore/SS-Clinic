@@ -721,20 +721,21 @@ export default function Contact() {
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
+                  required
                   rows={3}
                   placeholder=" "
                   className={`${floatingInputClass} resize-none`}
                 />
                 <label htmlFor="message" className={floatingTextareaLabelClass}>
-                  Reason for appointment booking (optional)
+                  Reason for appointment booking
                 </label>
               </div>
 
               <button
                 type="submit"
-                disabled={isSubmitting || !isVerified || !formData.fullName || !formData.email || !formData.doctor || !formData.date || !formData.time}
+                disabled={isSubmitting || !isVerified || !formData.fullName || !formData.phone || !formData.email || !formData.doctor || !formData.date || !formData.time || !formData.message.trim()}
                 className={buttonPrimaryClass}
-                title={!isVerified ? 'Verify your email using OTP to enable booking' : (!formData.fullName || !formData.email || !formData.doctor || !formData.date || !formData.time) ? 'Fill all required fields to book' : undefined}
+                title={!isVerified ? 'Verify your email using OTP to enable booking' : (!formData.fullName || !formData.phone || !formData.email || !formData.doctor || !formData.date || !formData.time || !formData.message.trim()) ? 'Fill all required fields to book' : undefined}
               >
                 {isSubmitting ? "Booking..." : "Book Appointment"}
               </button>
