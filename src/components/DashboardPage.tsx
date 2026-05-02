@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AppointmentList from "./AppointmentList";
 import { getAuth, signOut } from "firebase/auth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   LayoutDashboard,
   CalendarSearch,
@@ -42,7 +42,13 @@ export default function DashboardPage() {
   );
   
   // Tabs State
-  const [activeTab, setActiveTab] = useState<"appointments" | "blogs">("appointments");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") === "blogs" ? "blogs" : "appointments";
+
+  const handleTabChange = (tab: "appointments" | "blogs") => {
+    setSearchParams({ tab });
+  };
+
   const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
   const [isCreatingBlog, setIsCreatingBlog] = useState(false);
 
@@ -220,7 +226,7 @@ export default function DashboardPage() {
         {/* Tabs */}
         <div className="flex gap-4 border-b border-gray-200 mb-8">
           <button
-            onClick={() => setActiveTab("appointments")}
+            onClick={() => handleTabChange("appointments")}
             className={`pb-3 px-2 font-medium text-lg border-b-2 transition-colors ${
               activeTab === "appointments" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-800"
             }`}
@@ -229,7 +235,7 @@ export default function DashboardPage() {
           </button>
           <button
             onClick={() => {
-              setActiveTab("blogs");
+              handleTabChange("blogs");
               setIsCreatingBlog(false);
               setEditingBlog(null);
             }}
