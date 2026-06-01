@@ -13,7 +13,7 @@ interface Appointment {
   phone: string;
   message: string;
   status: string;
-  createdAt: any;
+  createdAt: unknown;
 }
 
 export default function AppointmentList() {

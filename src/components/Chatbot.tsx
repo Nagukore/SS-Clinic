@@ -161,8 +161,12 @@ export default function Chatbot() {
         (typeof res.data?.raw === "string" ? res.data.raw : null);
 
       return text || "I'm not sure, but I can help you find out!";
-    } catch (error: any) {
-      console.error("Backend error:", error?.response?.data || error?.message);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Backend error:", error.response?.data || error.message);
+      } else {
+        console.error("Backend error:", error instanceof Error ? error.message : "Unknown error");
+      }
       return "⚠️ Gemini service unavailable. Try again later or switch to Fast mode.";
     }
   };
@@ -202,7 +206,7 @@ export default function Chatbot() {
       };
 
       setMessages((prev) => [...prev, botMsg]);
-    } catch (err) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         {

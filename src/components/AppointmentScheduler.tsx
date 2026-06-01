@@ -5,7 +5,7 @@ import { collection, query, where, getDocs, Timestamp, addDoc } from "firebase/f
 // Generate time slots (every 7 minutes)
 function generateTimeSlots(startTime: Date, endTime: Date, interval: number): Date[] {
   const slots: Date[] = [];
-  let current = new Date(startTime);
+  const current = new Date(startTime);
   while (current < endTime) {
     slots.push(new Date(current));
     current.setMinutes(current.getMinutes() + interval);

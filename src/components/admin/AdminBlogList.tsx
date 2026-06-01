@@ -11,7 +11,7 @@ export interface Blog {
   content: string;
   imageUrl: string;
   author: string;
-  createdAt: any;
+  createdAt: { toDate?: () => Date } | null;
   published: boolean;
 }
 

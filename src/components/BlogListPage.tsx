@@ -1,11 +1,22 @@
 import { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
 import { Calendar, User, ArrowRight } from 'lucide-react';
 
+interface Blog {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  imageUrl?: string;
+  author: string;
+  published: boolean;
+  createdAt?: { toDate: () => Date };
+}
+
 export default function BlogListPage() {
-  const [blogs, setBlogs] = useState<any[]>([]);
+  const [blogs, setBlogs] = useState<Blog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -24,7 +35,7 @@ export default function BlogListPage() {
         );
         const querySnapshot = await getDocs(q);
         const blogsData = querySnapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() as any }))
+          .map(doc => ({ id: doc.id, ...doc.data() as Omit<Blog, 'id'> }))
           .filter(blog => blog.published === true);
         setBlogs(blogsData);
       } catch (error) {

@@ -30,14 +30,7 @@ export default function ChatbotGemini() {
     scrollToBottom();
   }, [messages]);
 
-  const getConversationHistory = () => {
-    return messages
-      .filter(msg => msg.id !== 1)
-      .map(msg => ({
-        role: msg.sender === 'user' ? 'user' : 'assistant',
-        content: msg.text
-      }));
-  };
+
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;

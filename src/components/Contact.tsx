@@ -76,6 +76,7 @@ export default function Contact() {
       // Reset chosen time when doctor/date change
       setFormData((p) => ({ ...p, time: "" }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.doctor, formData.date]);
 
   // OTP countdown tick
@@ -117,7 +118,7 @@ export default function Contact() {
     if (doctor === "Dr. Ashwini B S") {
       return generateSlots("17:45", "19:45", 15, selectedDate); // 5:45 PM to 7:45 PM
     } else if (doctor === "Dr. Sujith M S") {
-      return generateSlots("18:00", "21:00", 15, selectedDate); // 6:00 PM to 9:00 PM
+      return generateSlots("19:30", "21:30", 15, selectedDate); // 7:30 PM to 9:30 PM
     }
     return generateSlots("09:00", "20:00", 15, selectedDate); // Default fallback
   };
@@ -293,7 +294,7 @@ export default function Contact() {
       return newPatientId;
     } else {
       // Existing patient
-      const existing = patientSnap.docs[0].data() as any;
+      const existing = patientSnap.docs[0].data() as { fullName?: string; patientId: string };
       if (existing.fullName?.toLowerCase() !== fullName.toLowerCase()) {
         // Same email, different name -> create new patient record
         const allPatientsSnap = await getDocs(patientsRef);
@@ -377,7 +378,7 @@ export default function Contact() {
         createdAt: serverTimestamp(),
         status: "booked", // Default status
       });
-      console.log("Appointment added, docRef id:", (docRef as any).id);
+      console.log("Appointment added, docRef id:", docRef.id);
 
       // Send confirmation email
       const templateParams = {
@@ -397,11 +398,12 @@ export default function Contact() {
           templateParams,
           EMAILJS_PUBLIC_KEY
         );
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.warn("EmailJS confirmation error:", err);
         // Don't fail the whole booking if email fails
+        const errorMsg = err instanceof Error ? err.message : 'unknown error';
         setStatus(
-          `✅ Appt ${appointmentId} booked! (But confirmation email failed to send: ${err?.message || 'unknown error'})`
+          `✅ Appt ${appointmentId} booked! (But confirmation email failed to send: ${errorMsg})`
         );
         setIsSubmitting(false); // Manually set here
         return; // Exit
@@ -422,9 +424,10 @@ export default function Contact() {
       });
       setBookedSlots([]);
       setIsVerified(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Booking error:", err);
-      setStatus(`❌ Booking failed: ${err?.message || 'Try again later.'}`);
+      const errorMsg = err instanceof Error ? err.message : 'Try again later.';
+      setStatus(`❌ Booking failed: ${errorMsg}`);
     } finally {
       // Only set if not already set by email error
       if (isSubmitting) {

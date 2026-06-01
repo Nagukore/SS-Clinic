@@ -49,7 +49,14 @@ export default function AdminBlogForm({ blog, onBack, onSuccess }: AdminBlogForm
       if (imageFile) {
         setIsUploading(true);
         const storageRef = ref(storage, `blogs/${Date.now()}_${imageFile.name}`);
-        const snapshot = await uploadBytes(storageRef, imageFile);
+        
+        // Add a 15-second timeout to prevent infinite hanging
+        const uploadTask = uploadBytes(storageRef, imageFile);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Image upload timed out. This usually means Firebase Storage is not enabled or CORS is not configured properly in your Firebase Console. Please use the 'Image URL' option instead.")), 15000)
+        );
+        
+        const snapshot = await Promise.race([uploadTask, timeoutPromise as Promise<Awaited<typeof uploadTask>>]);
         finalImageUrl = await getDownloadURL(snapshot.ref);
         setIsUploading(false);
       }
@@ -77,9 +84,10 @@ export default function AdminBlogForm({ blog, onBack, onSuccess }: AdminBlogForm
       }
 
       onSuccess();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error saving blog:', error);
-      alert('Failed to save blog. Please try again.');
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred.';
+      alert(`Failed to save blog: ${errorMsg}`);
     } finally {
       setIsSaving(false);
       setIsUploading(false);
@@ -180,6 +188,20 @@ export default function AdminBlogForm({ blog, onBack, onSuccess }: AdminBlogForm
                 accept="image/*"
                 onChange={handleImageChange}
                 className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+            </div>
+            
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Or paste an Image URL</label>
+              <input
+                type="url"
+                value={imageUrl}
+                onChange={(e) => {
+                  setImageUrl(e.target.value);
+                  setImageFile(null); // Clear file if URL is provided
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="https://example.com/image.jpg"
               />
             </div>
             {isUploading && <p className="text-sm text-blue-600 animate-pulse">Uploading image...</p>}

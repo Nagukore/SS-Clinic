@@ -4,10 +4,22 @@ import { db } from '../firebase';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { ArrowLeft, Calendar, User, Share2 } from 'lucide-react';
 
+interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  imageUrl?: string;
+  author: string;
+  published: boolean;
+  createdAt?: { toDate: () => Date };
+}
+
 export default function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const [blog, setBlog] = useState<any>(null);
+  const [blog, setBlog] = useState<BlogPost | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -17,7 +29,7 @@ export default function BlogPostPage() {
         const querySnapshot = await getDocs(q);
         
         if (!querySnapshot.empty) {
-          const blogData = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() };
+          const blogData = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as BlogPost;
           setBlog(blogData);
           
           // Update SEO Title & Meta Description dynamically
