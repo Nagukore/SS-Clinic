@@ -214,7 +214,7 @@ export default function Contact() {
         return;
       }
 
-      const expiresInSeconds = Number(data.expiresInSeconds) || 300;
+      const expiresInSeconds = Number(data.expiresInSeconds) || 120;
       const resendInSeconds = Number(data.resendInSeconds) || 60;
       setOtpToken(data.otpToken || null);
       setOtpSent(true);
