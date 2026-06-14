@@ -110,7 +110,7 @@ export default function Contact() {
   // Auto-clear general status messages
   useEffect(() => {
     if (!status) return;
-    const t = setTimeout(() => setStatus(""), 6000);
+    const t = setTimeout(() => setStatus(""), 120);
     return () => clearTimeout(t);
   }, [status]);
 
