@@ -3,7 +3,7 @@
 import crypto from "crypto";
 
 // ------------ TIMINGS ------------
-export const OTP_TTL_MS = 5 * 60 * 1000; // OTP valid for 5 minutes
+export const OTP_TTL_MS = 2 * 60 * 1000; // OTP valid for 2 minutes
 export const RESEND_COOLDOWN_MS = 60 * 1000; // client-side resend cooldown hint
 export const TOKEN_TTL_MS = 30 * 60 * 1000; // booking-verification token valid 30 min
 
