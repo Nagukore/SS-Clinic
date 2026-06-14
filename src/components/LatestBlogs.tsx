@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '../firebase';
-import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { supabase } from '../supabase';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Calendar } from 'lucide-react';
 
@@ -12,7 +11,7 @@ interface Blog {
   imageUrl?: string;
   author: string;
   published: boolean;
-  createdAt?: { toDate: () => Date };
+  createdAt?: string;
 }
 
 export default function LatestBlogs() {
@@ -22,15 +21,25 @@ export default function LatestBlogs() {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const q = query(
-          collection(db, 'blogs'),
-          orderBy('createdAt', 'desc')
-        );
-        const querySnapshot = await getDocs(q);
-        const blogsData = querySnapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() as Omit<Blog, 'id'> }))
-          .filter(blog => blog.published === true)
-          .slice(0, 2);
+        const { data, error } = await supabase
+          .from('blogs')
+          .select('id, title, slug, excerpt, image_url, author, published, created_at')
+          .eq('published', true)
+          .order('created_at', { ascending: false })
+          .limit(2);
+
+        if (error) throw error;
+
+        const blogsData: Blog[] = (data ?? []).map(row => ({
+          id: row.id,
+          title: row.title,
+          slug: row.slug,
+          excerpt: row.excerpt,
+          imageUrl: row.image_url,
+          author: row.author,
+          published: row.published,
+          createdAt: row.created_at,
+        }));
         setBlogs(blogsData);
       } catch (error) {
         console.error("Error fetching latest blogs: ", error);
@@ -74,7 +83,7 @@ export default function LatestBlogs() {
               <div className="p-6 flex flex-col flex-1">
                 <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
                   <Calendar size={14} className="text-blue-500" />
-                  <span>{blog.createdAt?.toDate ? blog.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</span>
+                  <span>{blog.createdAt ? new Date(blog.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</span>
                 </div>
                 <Link to={`/blogs/${blog.slug}`}>
                   <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">{blog.title}</h3>

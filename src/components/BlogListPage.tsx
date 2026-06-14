@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '../firebase';
-import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { supabase } from '../supabase';
 import { Link } from 'react-router-dom';
 import { Calendar, User, ArrowRight } from 'lucide-react';
 
@@ -12,7 +11,7 @@ interface Blog {
   imageUrl?: string;
   author: string;
   published: boolean;
-  createdAt?: { toDate: () => Date };
+  createdAt?: string;
 }
 
 export default function BlogListPage() {
@@ -29,14 +28,24 @@ export default function BlogListPage() {
 
     const fetchBlogs = async () => {
       try {
-        const q = query(
-          collection(db, 'blogs'),
-          orderBy('createdAt', 'desc')
-        );
-        const querySnapshot = await getDocs(q);
-        const blogsData = querySnapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() as Omit<Blog, 'id'> }))
-          .filter(blog => blog.published === true);
+        const { data, error } = await supabase
+          .from('blogs')
+          .select('id, title, slug, excerpt, image_url, author, published, created_at')
+          .eq('published', true)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const blogsData: Blog[] = (data ?? []).map(row => ({
+          id: row.id,
+          title: row.title,
+          slug: row.slug,
+          excerpt: row.excerpt,
+          imageUrl: row.image_url,
+          author: row.author,
+          published: row.published,
+          createdAt: row.created_at,
+        }));
         setBlogs(blogsData);
       } catch (error) {
         console.error("Error fetching blogs: ", error);
@@ -81,7 +90,7 @@ export default function BlogListPage() {
                   <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
                     <div className="flex items-center gap-1.5">
                       <Calendar size={14} className="text-blue-500" />
-                      <span>{blog.createdAt?.toDate ? blog.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</span>
+                      <span>{blog.createdAt ? new Date(blog.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <User size={14} className="text-blue-500" />

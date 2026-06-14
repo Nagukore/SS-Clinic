@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { db } from '../firebase';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { supabase } from '../supabase';
 import { ArrowLeft, Calendar, User, Share2 } from 'lucide-react';
 
 interface BlogPost {
@@ -13,7 +12,7 @@ interface BlogPost {
   imageUrl?: string;
   author: string;
   published: boolean;
-  createdAt?: { toDate: () => Date };
+  createdAt?: string;
 }
 
 export default function BlogPostPage() {
@@ -25,13 +24,29 @@ export default function BlogPostPage() {
   useEffect(() => {
     const fetchBlog = async () => {
       try {
-        const q = query(collection(db, 'blogs'), where('slug', '==', slug), limit(1));
-        const querySnapshot = await getDocs(q);
-        
-        if (!querySnapshot.empty) {
-          const blogData = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as BlogPost;
+        const { data, error } = await supabase
+          .from('blogs')
+          .select('id, title, slug, excerpt, content, image_url, author, published, created_at')
+          .eq('slug', slug)
+          .limit(1)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (data) {
+          const blogData: BlogPost = {
+            id: data.id,
+            title: data.title,
+            slug: data.slug,
+            excerpt: data.excerpt,
+            content: data.content,
+            imageUrl: data.image_url,
+            author: data.author,
+            published: data.published,
+            createdAt: data.created_at,
+          };
           setBlog(blogData);
-          
+
           // Update SEO Title & Meta Description dynamically
           document.title = `${blogData.title} | SS Clinic`;
           const metaDesc = document.querySelector('meta[name="description"]');
@@ -92,7 +107,7 @@ export default function BlogPostPage() {
             <div className="flex items-center gap-2">
               <Calendar size={18} className="text-blue-500" />
               <span>
-                {blog.createdAt?.toDate ? blog.createdAt.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}
+                {blog.createdAt ? new Date(blog.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}
               </span>
             </div>
             <button 

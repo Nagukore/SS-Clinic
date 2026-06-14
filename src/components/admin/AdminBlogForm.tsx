@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { db, storage } from '../../firebase';
-import { collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { supabase, BLOG_BUCKET } from '../../supabase';
 import { ArrowLeft, Save, Image as ImageIcon } from 'lucide-react';
 import { Blog } from './AdminBlogList';
 
@@ -48,16 +46,22 @@ export default function AdminBlogForm({ blog, onBack, onSuccess }: AdminBlogForm
       // Handle image upload if a new file is selected
       if (imageFile) {
         setIsUploading(true);
-        const storageRef = ref(storage, `blogs/${Date.now()}_${imageFile.name}`);
-        
-        // Add a 15-second timeout to prevent infinite hanging
-        const uploadTask = uploadBytes(storageRef, imageFile);
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Image upload timed out. This usually means Firebase Storage is not enabled or CORS is not configured properly in your Firebase Console. Please use the 'Image URL' option instead.")), 15000)
-        );
-        
-        const snapshot = await Promise.race([uploadTask, timeoutPromise as Promise<Awaited<typeof uploadTask>>]);
-        finalImageUrl = await getDownloadURL(snapshot.ref);
+        const filePath = `blogs/${Date.now()}_${imageFile.name}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from(BLOG_BUCKET)
+          .upload(filePath, imageFile, { cacheControl: '3600', upsert: false });
+
+        if (uploadError) {
+          throw new Error(
+            `Image upload failed: ${uploadError.message}. Make sure the '${BLOG_BUCKET}' storage bucket exists and is public, or use the 'Image URL' option instead.`
+          );
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from(BLOG_BUCKET)
+          .getPublicUrl(filePath);
+        finalImageUrl = publicUrlData.publicUrl;
         setIsUploading(false);
       }
 
@@ -67,20 +71,19 @@ export default function AdminBlogForm({ blog, onBack, onSuccess }: AdminBlogForm
         excerpt,
         content,
         author,
-        imageUrl: finalImageUrl,
+        image_url: finalImageUrl,
         published,
-        updatedAt: serverTimestamp(),
+        updated_at: new Date().toISOString(),
       };
 
       if (blog?.id) {
         // Update existing blog
-        await updateDoc(doc(db, 'blogs', blog.id), blogData);
+        const { error } = await supabase.from('blogs').update(blogData).eq('id', blog.id);
+        if (error) throw error;
       } else {
         // Create new blog
-        await addDoc(collection(db, 'blogs'), {
-          ...blogData,
-          createdAt: serverTimestamp(),
-        });
+        const { error } = await supabase.from('blogs').insert(blogData);
+        if (error) throw error;
       }
 
       onSuccess();

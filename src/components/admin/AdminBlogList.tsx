@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '../../firebase';
-import { collection, getDocs, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { supabase } from '../../supabase';
 import { Edit, Trash2, PlusCircle } from 'lucide-react';
 
 export interface Blog {
@@ -11,7 +10,7 @@ export interface Blog {
   content: string;
   imageUrl: string;
   author: string;
-  createdAt: { toDate?: () => Date } | null;
+  createdAt: string | null;
   published: boolean;
 }
 
@@ -31,15 +30,25 @@ export default function AdminBlogList({ onEdit, onCreate }: AdminBlogListProps) 
   const fetchBlogs = async () => {
     setIsLoading(true);
     try {
-      const blogsCollection = collection(db, 'blogs');
-      const q = query(blogsCollection, orderBy('createdAt', 'desc'));
-      const querySnapshot = await getDocs(q);
-      
-      const blogsData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Blog[];
-      
+      const { data, error } = await supabase
+        .from('blogs')
+        .select('id, title, slug, excerpt, content, image_url, author, published, created_at')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const blogsData: Blog[] = (data ?? []).map((row) => ({
+        id: row.id,
+        title: row.title,
+        slug: row.slug,
+        excerpt: row.excerpt,
+        content: row.content,
+        imageUrl: row.image_url,
+        author: row.author,
+        published: row.published,
+        createdAt: row.created_at,
+      }));
+
       setBlogs(blogsData);
     } catch (error) {
       console.error('Error fetching blogs:', error);
@@ -51,7 +60,8 @@ export default function AdminBlogList({ onEdit, onCreate }: AdminBlogListProps) 
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this blog?')) {
       try {
-        await deleteDoc(doc(db, 'blogs', id));
+        const { error } = await supabase.from('blogs').delete().eq('id', id);
+        if (error) throw error;
         fetchBlogs(); // Refresh the list
       } catch (error) {
         console.error('Error deleting blog:', error);
@@ -105,7 +115,7 @@ export default function AdminBlogList({ onEdit, onCreate }: AdminBlogListProps) 
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{blog.title}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{blog.author || 'Unknown'}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {blog.createdAt?.toDate ? blog.createdAt.toDate().toLocaleDateString() : 'N/A'}
+                    {blog.createdAt ? new Date(blog.createdAt).toLocaleDateString() : 'N/A'}
                   </td>
                   <td className="px-6 py-4 text-sm">
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${blog.published ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
