@@ -47,10 +47,10 @@ export default function ChatbotGemini() {
     setIsTyping(true);
 
     try {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://ss-clinic.onrender.com';
+      const backendUrl = (import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '');
       const cleanUrl = backendUrl.replace(/\/$/, '');
 
-      const response = await fetch(`${cleanUrl}/chat`, {
+      const response = await fetch(`${cleanUrl}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -45,8 +45,9 @@ export default function Chatbot() {
   // via `VITE_BACKEND_URL` (see `BACKEND_URL` above) instead of embedding credentials here.
 
   // -------------------- BACKEND URL --------------------
-  const BACKEND_URL =
-    import.meta.env.VITE_BACKEND_URL || "https://ss-clinic.onrender.com";
+  // Same-origin /api on Vercel by default; override with VITE_BACKEND_URL for
+  // cross-origin dev (e.g. localhost pointing at the deployed Vercel URL).
+  const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || "").replace(/\/$/, "");
 
 
 
@@ -153,7 +154,7 @@ export default function Chatbot() {
   const getGeminiResponse = async (query: string): Promise<string> => {
     try {
       const cleanUrl = BACKEND_URL.replace(/\/$/, ""); // Remove trailing slash
-      const res = await axios.post(`${cleanUrl}/chat`, { prompt: query }, { timeout: 30000 });
+      const res = await axios.post(`${cleanUrl}/api/chat`, { prompt: query }, { timeout: 30000 });
 
       // API returns { text } or { raw }
       const text =

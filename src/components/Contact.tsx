@@ -1,5 +1,5 @@
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { db } from "../firebase"; // Make sure this path is correct
 import {
   collection,
@@ -15,13 +15,18 @@ import emailjs from "@emailjs/browser";
  * EmailJS config (from Vite env vars)
  */
 const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID as string;
-const OTP_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_OTP_TEMPLATE_ID as string; // Template to send OTP
 const APPT_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_APPT_TEMPLATE_ID as string; // Template for appointment confirmation
 const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY as string;
 
-// Development-time safety checks — warn if EmailJS env vars are missing
-if (!SERVICE_ID || !OTP_TEMPLATE_ID || !APPT_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) {
-  console.warn("EmailJS environment variables are not fully configured.\nPlease add VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_OTP_TEMPLATE_ID, VITE_EMAILJS_APPT_TEMPLATE_ID and VITE_EMAILJS_PUBLIC_KEY to your .env.local or .env file (see .env.example).\nBooking and OTP email functionality will not work without them.");
+// OTP generation + verification run on the Vercel serverless API (the code never
+// reaches the browser). Empty default = same-origin /api/* on the deployed site.
+// Set VITE_BACKEND_URL only when the API lives on a different origin (e.g. local
+// dev pointing at the deployed Vercel URL).
+const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL as string)?.replace(/\/$/, "") || "";
+
+// Development-time safety checks — warn if required env vars are missing
+if (!SERVICE_ID || !APPT_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) {
+  console.warn("EmailJS environment variables are not fully configured.\nPlease add VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_APPT_TEMPLATE_ID and VITE_EMAILJS_PUBLIC_KEY to your .env.local or .env file (see .env.example).\nAppointment confirmation emails will not work without them.");
 }
 
 type FormData = {
@@ -53,14 +58,18 @@ export default function Contact() {
   const [slots, setSlots] = useState<string[]>([]);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
 
-  // OTP state
+  // OTP state (the actual code lives only on the server)
   const [otpSent, setOtpSent] = useState(false);
   const [otpValue, setOtpValue] = useState("");
-  const [generatedOtp, setGeneratedOtp] = useState<string | null>(null);
   const [otpExpiresAt, setOtpExpiresAt] = useState<number | null>(null);
+  const [resendUntil, setResendUntil] = useState<number | null>(null);
   const [isVerified, setIsVerified] = useState(false);
-  const [otpCountdown, setOtpCountdown] = useState<number>(0);
-  const timerRef = useRef<number | null>(null);
+  const [otpToken, setOtpToken] = useState<string | null>(null); // stateless OTP challenge token
+  const [verificationToken, setVerificationToken] = useState<string | null>(null);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [otpCountdown, setOtpCountdown] = useState<number>(0); // OTP expiry countdown
+  const [resendCountdown, setResendCountdown] = useState<number>(0); // resend cooldown
 
   // Initialize EmailJS once
   useEffect(() => {
@@ -79,32 +88,24 @@ export default function Contact() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.doctor, formData.date]);
 
-  // OTP countdown tick
+  // OTP expiry + resend-cooldown countdown tick
   useEffect(() => {
-    if (!otpExpiresAt) {
-      setOtpCountdown(0);
-      return;
-    }
     const tick = () => {
-      const remain = Math.max(0, Math.ceil((otpExpiresAt - Date.now()) / 1000));
-      setOtpCountdown(remain);
-      if (remain <= 0) {
-        setGeneratedOtp(null);
+      const now = Date.now();
+      const expRemain = otpExpiresAt ? Math.max(0, Math.ceil((otpExpiresAt - now) / 1000)) : 0;
+      const resendRemain = resendUntil ? Math.max(0, Math.ceil((resendUntil - now) / 1000)) : 0;
+      setOtpCountdown(expRemain);
+      setResendCountdown(resendRemain);
+      // Hide the OTP box once the code has expired
+      if (otpExpiresAt && expRemain <= 0) {
         setOtpSent(false);
         setOtpExpiresAt(null);
-        window.clearInterval(timerRef.current ?? 0);
-        timerRef.current = null;
       }
     };
     tick();
-    timerRef.current = window.setInterval(tick, 1000);
-    return () => {
-      if (timerRef.current) {
-        window.clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [otpExpiresAt]);
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [otpExpiresAt, resendUntil]);
 
   // Auto-clear general status messages
   useEffect(() => {
@@ -182,88 +183,96 @@ export default function Contact() {
     // Editing email should reset verification
     if (name === "email") {
       setIsVerified(false);
-      setGeneratedOtp(null);
+      setVerificationToken(null);
+      setOtpToken(null);
       setOtpSent(false);
       setOtpExpiresAt(null);
+      setResendUntil(null);
+      setOtpValue("");
     }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // --- Generate random 6-digit OTP ---
-  const createOtp = () => {
-    return String(Math.floor(100000 + Math.random() * 900000));
-  };
-
-  // --- Send OTP via EmailJS ---
+  // --- Request an OTP from the backend (code is generated + emailed server-side) ---
   const handleSendOtp = async () => {
     if (!formData.email) {
       setStatus("Please enter an email to receive the OTP.");
       return;
     }
-    // Create OTP and expiration (2 minutes)
-    const otp = createOtp();
-    setGeneratedOtp(otp);
-    setOtpSent(true);
-    setIsVerified(false);
-    const expiresAt = Date.now() + 2 * 60 * 1000; // 2 minutes
-    setOtpExpiresAt(expiresAt);
-
-    const templateParams = {
-      to_email: formData.email,
-      otp,
-      clinic_name: "SS Clinic", // Standardized name
-      expiry_minutes: 2,
-    };
-
+    setIsSendingOtp(true);
+    setStatus("Sending OTP...");
     try {
-      await emailjs.send(
-        SERVICE_ID,
-        OTP_TEMPLATE_ID,
-        templateParams,
-        EMAILJS_PUBLIC_KEY
+      const res = await fetch(`${BACKEND_URL}/api/send-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setStatus(data.error || "Failed to send OTP. Please try again.");
+        return;
+      }
+
+      const expiresInSeconds = Number(data.expiresInSeconds) || 300;
+      const resendInSeconds = Number(data.resendInSeconds) || 60;
+      setOtpToken(data.otpToken || null);
+      setOtpSent(true);
+      setIsVerified(false);
+      setVerificationToken(null);
+      setOtpValue("");
+      setOtpExpiresAt(Date.now() + expiresInSeconds * 1000);
+      setResendUntil(Date.now() + resendInSeconds * 1000);
+      setStatus(
+        `OTP sent to your email. It will expire in ${Math.round(expiresInSeconds / 60)} minute(s).`
       );
-      setStatus("OTP sent to your email. It will expire in 2 minutes.");
     } catch (err) {
-      console.error("EmailJS OTP send error:", err);
-      setStatus("Failed to send OTP. Please check EmailJS setup or try again.");
-      // Clear OTP state on fail
-      setGeneratedOtp(null);
-      setOtpSent(false);
-      setOtpExpiresAt(null);
+      console.error("send-otp error:", err);
+      setStatus("Could not reach the server to send OTP. Please try again.");
+    } finally {
+      setIsSendingOtp(false);
     }
   };
 
-  // --- Verify OTP input ---
-  const handleVerifyOtp = () => {
-    if (!generatedOtp) {
-      setStatus("No OTP to verify. Please request an OTP.");
-      return;
-    }
-    if (!otpValue) {
+  // --- Verify the entered code against the backend ---
+  const handleVerifyOtp = async () => {
+    if (!otpValue.trim()) {
       setStatus("Enter the 6-digit verification code sent to your email.");
       return;
     }
-    if (Date.now() > (otpExpiresAt ?? 0)) {
-      setStatus("OTP expired. Please request a new one.");
-      setGeneratedOtp(null);
-      setOtpSent(false);
-      setOtpExpiresAt(null);
+    if (!otpToken) {
+      setStatus("No active code. Please request a new OTP.");
       return;
     }
-    if (otpValue.trim() === generatedOtp) {
+    setIsVerifyingOtp(true);
+    setStatus("Verifying...");
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email, otp: otpValue.trim(), otpToken }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.success) {
+        setStatus(data.error || "Incorrect code. Please try again.");
+        return;
+      }
+
       setIsVerified(true);
+      setVerificationToken(data.token || null);
       setStatus("Email verified ✅. You can now book an appointment.");
-      // Clear OTP from client memory
-      setGeneratedOtp(null);
+      // Tear down OTP UI state
+      setOtpToken(null);
       setOtpSent(false);
       setOtpExpiresAt(null);
+      setResendUntil(null);
       setOtpValue("");
-      if (timerRef.current) {
-        window.clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    } else {
-      setStatus("Incorrect code. Please check and try again.");
+    } catch (err) {
+      console.error("verify-otp error:", err);
+      setStatus("Could not reach the server to verify OTP. Please try again.");
+    } finally {
+      setIsVerifyingOtp(false);
     }
   };
 
@@ -375,6 +384,7 @@ export default function Contact() {
         appointmentId,
         patientId,
         ...formData,
+        verificationToken, // proof the email was verified server-side
         createdAt: serverTimestamp(),
         status: "booked", // Default status
       });
@@ -424,6 +434,8 @@ export default function Contact() {
       });
       setBookedSlots([]);
       setIsVerified(false);
+      setVerificationToken(null);
+      setOtpToken(null);
     } catch (err: unknown) {
       console.error("Booking error:", err);
       const errorMsg = err instanceof Error ? err.message : 'Try again later.';
@@ -611,9 +623,17 @@ export default function Contact() {
                       ? "bg-green-100 text-green-700 cursor-default"
                       : "bg-blue-100 text-blue-700 hover:bg-blue-200"
                   } disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed`}
-                  disabled={!formData.email || isVerified || otpCountdown > 0}
+                  disabled={!formData.email || isVerified || isSendingOtp || resendCountdown > 0}
                 >
-                  {isVerified ? "Verified ✅" : (otpCountdown > 0 ? `Resend in ${otpCountdown}s` : "Send OTP")}
+                  {isVerified
+                    ? "Verified ✅"
+                    : isSendingOtp
+                    ? "Sending..."
+                    : resendCountdown > 0
+                    ? `Resend in ${resendCountdown}s`
+                    : otpSent
+                    ? "Resend OTP"
+                    : "Send OTP"}
                 </button>
               </div>
 
@@ -637,9 +657,10 @@ export default function Contact() {
                     <button
                       type="button"
                       onClick={handleVerifyOtp}
-                      className="w-full sm:w-auto px-5 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
+                      disabled={isVerifyingOtp || !otpValue.trim()}
+                      className="w-full sm:w-auto px-5 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      Verify
+                      {isVerifyingOtp ? "Verifying..." : "Verify"}
                     </button>
                   </div>
                   {otpCountdown > 0 && (
