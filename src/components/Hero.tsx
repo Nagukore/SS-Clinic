@@ -98,7 +98,7 @@ export default function Hero() {
       id="home"
       className="pt-16 bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/80 overflow-hidden"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
           {/* ✅ RIGHT — Content */}
@@ -201,7 +201,7 @@ export default function Hero() {
                   {sliderContent[currentIndex].subtitle}
                 </span>
 
-                <div className="relative h-24 sm:h-28 overflow-hidden">
+                <div className="relative h-36 sm:h-32 overflow-hidden">
                   {sliderContent.map((content, index) => (
                     <div 
                       key={index}
