@@ -1,13 +1,17 @@
-// src/main.tsx (Using App.tsx for the homepage)
+// src/main.tsx
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import './index.css';
 
-// Import your components
+// Layout & pages
 import RootLayout from './components/RootLayout';
-import App from './App'; // <-- We import App from App.tsx
+import App from './App'; // Home page (Hero + Latest Blogs)
+import About from './components/About';
+import Doctors from './components/Doctors';
+import Services from './components/Services';
+import Contact from './components/Contact';
 import LoginPage from './components/LoginPage';
 import DashboardPage from './components/DashboardPage';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -21,7 +25,23 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <App />, // <-- And use it here for the homepage
+        element: <App />,
+      },
+      {
+        path: 'about',
+        element: <About />,
+      },
+      {
+        path: 'doctors',
+        element: <Doctors />,
+      },
+      {
+        path: 'services',
+        element: <Services />,
+      },
+      {
+        path: 'contact',
+        element: <Contact />,
       },
       {
         path: 'admin',

@@ -1,24 +1,23 @@
-// src/pages/HomePage.tsx (previously App.tsx)
+// src/App.tsx — Home page (full website on one page)
 
 import Hero from './components/Hero';
 import About from './components/About';
-import Doctors from './components/Doctors';
 import Services from './components/Services';
-import Contact from './components/Contact';
-import Chatbot from './components/Chatbot';
+import Doctors from './components/Doctors';
 import LatestBlogs from './components/LatestBlogs';
+import Contact from './components/Contact';
 
-// Notice there is NO Navbar here!
+// Home shows every section. The same sections are also reachable as
+// standalone pages (/about, /doctors, /services, /contact).
 export default function HomePage() {
   return (
     <>
       <Hero />
       <About />
-      <Doctors />
       <Services />
+      <Doctors />
       <LatestBlogs />
       <Contact />
-      <Chatbot />
     </>
   );
 }

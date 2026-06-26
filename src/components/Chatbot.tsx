@@ -10,13 +10,37 @@ interface Message {
   timestamp: Date;
 }
 
-export default function Chatbot() {
-  // -------------------- STATES --------------------
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      text: `
+// Max number of real Gemini API calls allowed per chat session (token guard).
+const GEMINI_SESSION_LIMIT = 12;
+
+// Reject obvious non-questions / gibberish before spending tokens.
+const isMeaningfulQuery = (text: string): boolean => {
+  const t = text.trim();
+  if (t.length < 3) return false;                 // too short ("ok", "??")
+  if (!/[a-zA-Z]{2,}/.test(t)) return false;      // no real words (emojis/numbers only)
+  return true;
+};
+
+// Build the opening bot message for a given mode (used to start a fresh chat).
+const getWelcomeMessage = (mode: "fast" | "gemini"): Message => ({
+  id: Date.now(),
+  sender: "bot",
+  timestamp: new Date(),
+  text:
+    mode === "gemini"
+      ? `
+      🧠 <b>Gemini Mode</b> — AI-powered assistant<br><br>
+      Ask me anything about <b>SS Clinic</b> in your own words:
+      <ul class="list-disc ml-6 mt-2 text-gray-700">
+        <li>👨‍⚕️ Doctors, specialities & timings</li>
+        <li>💊 Services & treatments</li>
+        <li>📅 Booking an appointment</li>
+        <li>📍 Location, hours & contact</li>
+      </ul>
+      <br>
+      Go ahead — how can I help you today?
+      `
+      : `
       👋 <b>Welcome to SS Clinic!</b><br><br>
       I can assist you with the following:
       <ul class="list-disc ml-6 mt-2 text-gray-700">
@@ -29,14 +53,27 @@ export default function Chatbot() {
       <br>
       Try asking about <b>"appointments"</b> or <b>"clinic hours"</b> to get started!
       `,
-      sender: "bot",
-      timestamp: new Date(),
-    },
-  ]);
+});
+
+export default function Chatbot() {
+  // -------------------- STATES --------------------
+  const [isOpen, setIsOpen] = useState(false);
+  const [mode, setMode] = useState<"fast" | "gemini">("fast");
+  const [messages, setMessages] = useState<Message[]>([getWelcomeMessage("fast")]);
+  const [geminiCount, setGeminiCount] = useState(0);
+
+  // Switch mode and start a brand-new chat with that mode's welcome message.
+  const switchMode = (next: "fast" | "gemini") => {
+    if (next === mode) return;
+    setMode(next);
+    setInputMessage("");
+    setIsTyping(false);
+    setGeminiCount(0);
+    setMessages([getWelcomeMessage(next)]);
+  };
 
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [mode, setMode] = useState<"fast" | "gemini">("fast");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isSending, setIsSending] = useState(false);
 
@@ -165,6 +202,11 @@ export default function Chatbot() {
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         console.error("Backend error:", error.response?.data || error.message);
+        // Surface server messages like the 429 rate-limit notice.
+        const serverMsg = error.response?.data?.error;
+        if (error.response?.status === 429 && serverMsg) {
+          return `⏳ ${serverMsg}`;
+        }
       } else {
         console.error("Backend error:", error instanceof Error ? error.message : "Unknown error");
       }
@@ -196,7 +238,27 @@ export default function Chatbot() {
         botReply = getFastResponse(trimmed);
         if (!botReply) botReply = "🤔 Hmm... I couldn’t find that. Try switching to Gemini mode!";
       } else {
-        botReply = await getGeminiResponse(trimmed);
+        // --- Token guards: avoid calling Gemini for things we can handle locally ---
+
+        // 1. Greetings / common queries → answer from presets (no API call).
+        const preset = getFastResponse(trimmed);
+        if (preset) {
+          botReply = preset;
+        }
+        // 2. Junk / non-questions → canned reply (no API call).
+        else if (!isMeaningfulQuery(trimmed)) {
+          botReply =
+            "🙂 Please ask a clear question about <b>SS Clinic</b> — our doctors, services, timings, or booking an appointment.";
+        }
+        // 3. Session limit reached → stop spending tokens.
+        else if (geminiCount >= GEMINI_SESSION_LIMIT) {
+          botReply = `⚠️ You've reached the AI chat limit for this session. For further help, please call <b>+91 9602154222</b> or switch to <b>Fast</b> mode.`;
+        }
+        // 4. Genuine query → call Gemini and count it.
+        else {
+          botReply = await getGeminiResponse(trimmed);
+          setGeminiCount((c) => c + 1);
+        }
       }
 
       const botMsg: Message = {
@@ -265,13 +327,13 @@ export default function Chatbot() {
 
           <div className="flex justify-center gap-3 p-2 bg-blue-50 border-b">
             <button
-              onClick={() => setMode("fast")}
+              onClick={() => switchMode("fast")}
               className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${mode === "fast" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`}
             >
               <Zap size={14} /> Fast
             </button>
             <button
-              onClick={() => setMode("gemini")}
+              onClick={() => switchMode("gemini")}
               className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${mode === "gemini" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`}
             >
               <Brain size={14} /> Gemini

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowRight, Heart, ChevronLeft, ChevronRight, Activity } from 'lucide-react';
 
 // --- Welcome Loader Component ---
@@ -121,8 +122,8 @@ export default function Hero() {
 
             {/* Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
-              <a
-                href="#appointment"
+              <Link
+                to="/contact#appointment"
                 className="group relative inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-xl hover:bg-blue-700 transition-all duration-300 shadow-[0_8px_30px_rgb(37,99,235,0.25)] hover:shadow-[0_8px_30px_rgb(37,99,235,0.4)] font-semibold overflow-hidden"
               >
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
@@ -130,14 +131,14 @@ export default function Hero() {
                   Book Appointment
                   <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                 </span>
-              </a>
+              </Link>
 
-              <a
-                href="#doctors"
+              <Link
+                to="/doctors"
                 className="inline-flex items-center justify-center gap-2 bg-white text-blue-700 px-8 py-4 rounded-xl hover:bg-blue-50 transition-all duration-300 border-2 border-blue-100 hover:border-blue-200 font-semibold shadow-sm hover:shadow"
               >
                 Meet Our Doctors
-              </a>
+              </Link>
             </div>
 
             {/* Stats */}

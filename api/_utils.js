@@ -35,6 +35,46 @@ export function applyCors(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
+// ------------ CLIENT IP ------------
+// Behind Vercel/proxies the real client IP is in x-forwarded-for (first entry).
+export function getClientIp(req) {
+  const xff = req.headers["x-forwarded-for"];
+  if (xff) return String(xff).split(",")[0].trim();
+  return (
+    req.headers["x-real-ip"] ||
+    req.socket?.remoteAddress ||
+    "unknown"
+  );
+}
+
+// ------------ IN-MEMORY IP RATE LIMITER ------------
+// Sliding-window counter kept in module memory. NOTE: serverless instances are
+// ephemeral and not shared, so this throttles abuse per warm instance rather
+// than globally. For a hard global limit, back this with Upstash/Redis.
+const rateBuckets = new Map(); // key -> number[] (request timestamps)
+
+export function rateLimit(key, { limit, windowMs }) {
+  const now = Date.now();
+  const hits = (rateBuckets.get(key) || []).filter((t) => now - t < windowMs);
+
+  if (hits.length >= limit) {
+    const retryAfterMs = windowMs - (now - hits[0]);
+    return { allowed: false, remaining: 0, retryAfterMs };
+  }
+
+  hits.push(now);
+  rateBuckets.set(key, hits);
+
+  // Opportunistic cleanup so the Map doesn't grow unbounded.
+  if (rateBuckets.size > 5000) {
+    for (const [k, ts] of rateBuckets) {
+      if (ts.every((t) => now - t >= windowMs)) rateBuckets.delete(k);
+    }
+  }
+
+  return { allowed: true, remaining: limit - hits.length, retryAfterMs: 0 };
+}
+
 // ------------ EMAIL / VALIDATION ------------
 export const normalizeEmail = (e) => String(e || "").trim().toLowerCase();
 export const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
