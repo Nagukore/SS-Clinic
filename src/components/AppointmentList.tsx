@@ -19,6 +19,7 @@ interface Appointment {
 export default function AppointmentList() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [dateFilter, setDateFilter] = useState<string>(''); // "YYYY-MM-DD" or "" for all
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -79,6 +80,10 @@ export default function AppointmentList() {
     }
   };
 
+  const filteredAppointments = dateFilter
+    ? appointments.filter((app) => app.date === dateFilter)
+    : appointments;
+
   if (isLoading) {
     return <div className="text-center p-8 text-gray-500 animate-pulse">Loading appointments...</div>;
   }
@@ -88,7 +93,38 @@ export default function AppointmentList() {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+    <div>
+      {/* Date filter toolbar */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <label htmlFor="appointment-date-filter" className="text-sm font-medium text-gray-700">
+          Filter by date:
+        </label>
+        <input
+          id="appointment-date-filter"
+          type="date"
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value)}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        {dateFilter && (
+          <button
+            onClick={() => setDateFilter('')}
+            className="text-sm font-medium text-blue-600 hover:text-blue-800"
+          >
+            Clear
+          </button>
+        )}
+        <span className="text-sm text-gray-500 ml-auto">
+          Showing {filteredAppointments.length} of {appointments.length}
+        </span>
+      </div>
+
+      {filteredAppointments.length === 0 ? (
+        <div className="text-center p-8 text-gray-500 bg-white rounded-2xl shadow-lg border border-gray-200">
+          No appointments found for {dateFilter}.
+        </div>
+      ) : (
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -106,7 +142,7 @@ export default function AppointmentList() {
           </thead>
 
           <tbody className="bg-white divide-y divide-gray-200">
-            {appointments.map((app) => (
+            {filteredAppointments.map((app) => (
               <tr key={app.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4 text-sm font-semibold text-gray-800">{app.appointmentID}</td>
                 <td className="px-6 py-4 text-sm font-semibold text-gray-500">{app.patientId}</td> {/* ✅ New Data Cell */}
@@ -126,6 +162,8 @@ export default function AppointmentList() {
           </tbody>
         </table>
       </div>
+      </div>
+      )}
     </div>
   );
 }
